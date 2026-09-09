@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2.1: hotfix carga assets móvil + splash."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2.2: Energía (paneles solares) + reanudar construcción."
 publish_to: 'none'
-version: 0.2.1+3
+version: 0.2.2+4
 
 environment:
   sdk: ^3.13.2

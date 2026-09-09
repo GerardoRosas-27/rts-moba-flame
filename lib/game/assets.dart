@@ -83,7 +83,7 @@ class GameAssets {
     switch (kind) {
       case BuildingKind.commandCenter:
         return get('building_base_large.png');
-      case BuildingKind.refinery:
+      case BuildingKind.solarPanel:
         return get('building_solarpanel_structure.png');
       case BuildingKind.supplyDepot:
         return get('building_geodesic_dome.png');

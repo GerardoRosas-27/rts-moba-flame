@@ -1,8 +1,8 @@
-enum ResourceKind { mineral, gas }
+enum ResourceKind { mineral }
 
 enum BuildingKind {
   commandCenter,
-  refinery,
+  solarPanel,
   supplyDepot,
   barracks,
   outpost,
@@ -27,7 +27,7 @@ enum CommandAction {
 
 enum BuildMode {
   none,
-  refinery,
+  solarPanel,
   supplyDepot,
   barracks,
   outpost,
@@ -49,8 +49,8 @@ extension BuildingKindLabel on BuildingKind {
     switch (this) {
       case BuildingKind.commandCenter:
         return 'Centro de Mando';
-      case BuildingKind.refinery:
-        return 'Refinería';
+      case BuildingKind.solarPanel:
+        return 'Panel solar';
       case BuildingKind.supplyDepot:
         return 'Depósito';
       case BuildingKind.barracks:
@@ -64,8 +64,8 @@ extension BuildingKindLabel on BuildingKind {
     switch (this) {
       case BuildingKind.commandCenter:
         return 'CC';
-      case BuildingKind.refinery:
-        return 'REF';
+      case BuildingKind.solarPanel:
+        return 'SOL';
       case BuildingKind.supplyDepot:
         return 'DEP';
       case BuildingKind.barracks:
@@ -79,7 +79,7 @@ extension BuildingKindLabel on BuildingKind {
     switch (this) {
       case BuildingKind.commandCenter:
         return 'Base_Large';
-      case BuildingKind.refinery:
+      case BuildingKind.solarPanel:
         return 'SolarPanel_Structure';
       case BuildingKind.supplyDepot:
         return 'GeodesicDome';

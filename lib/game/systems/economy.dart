@@ -1,36 +1,37 @@
 import '../balance.dart';
 
-/// Tracks minerals, gas, supply and rolling harvest rates.
+/// Tracks minerals, energía, supply and rolling rates.
 class Economy {
   int minerals;
-  int gas;
+  int energy;
   int supplyUsed;
   int supplyMax;
 
   final List<(double time, int amount)> _mineralDeposits = [];
-  final List<(double time, int amount)> _gasDeposits = [];
+  final List<(double time, int amount)> _energyDeposits = [];
   double _clock = 0;
+  double _energyAccumulator = 0;
 
   Economy({
     this.minerals = Balance.startMinerals,
-    this.gas = Balance.startGas,
+    this.energy = Balance.startEnergy,
     this.supplyUsed = 0,
     this.supplyMax = Balance.commandCenterSupply,
   });
 
-  bool canAfford({int mineral = 0, int gasCost = 0, int supply = 0}) {
+  bool canAfford({int mineral = 0, int energyCost = 0, int supply = 0}) {
     if (minerals < mineral) return false;
-    if (gas < gasCost) return false;
+    if (energy < energyCost) return false;
     if (supply > 0 && supplyUsed + supply > supplyMax) return false;
     return true;
   }
 
-  bool spend({int mineral = 0, int gasCost = 0, int supply = 0}) {
-    if (!canAfford(mineral: mineral, gasCost: gasCost, supply: supply)) {
+  bool spend({int mineral = 0, int energyCost = 0, int supply = 0}) {
+    if (!canAfford(mineral: mineral, energyCost: energyCost, supply: supply)) {
       return false;
     }
     minerals -= mineral;
-    gas -= gasCost;
+    energy -= energyCost;
     supplyUsed += supply;
     return true;
   }
@@ -46,16 +47,29 @@ class Economy {
     _mineralDeposits.add((_clock, amount));
   }
 
-  void depositGas(int amount) {
-    gas += amount;
-    _gasDeposits.add((_clock, amount));
+  void depositEnergy(int amount) {
+    if (amount <= 0) return;
+    energy += amount;
+    _energyDeposits.add((_clock, amount));
+  }
+
+  /// Generación pasiva: [panelCount] paneles solares completos.
+  void tickPassiveEnergy(double dt, int panelCount) {
+    if (panelCount <= 0) return;
+    _energyAccumulator +=
+        panelCount * (Balance.energyPerPanelPerMin / 60.0) * dt;
+    while (_energyAccumulator >= 1) {
+      final whole = _energyAccumulator.floor();
+      _energyAccumulator -= whole;
+      depositEnergy(whole);
+    }
   }
 
   void update(double dt) {
     _clock += dt;
     final cutoff = _clock - Balance.harvestRateWindowSeconds;
     _mineralDeposits.removeWhere((e) => e.$1 < cutoff);
-    _gasDeposits.removeWhere((e) => e.$1 < cutoff);
+    _energyDeposits.removeWhere((e) => e.$1 < cutoff);
   }
 
   int get mineralRatePerMin {
@@ -63,8 +77,8 @@ class Economy {
     return (sum * (60 / Balance.harvestRateWindowSeconds)).round();
   }
 
-  int get gasRatePerMin {
-    final sum = _gasDeposits.fold<int>(0, (a, e) => a + e.$2);
+  int get energyRatePerMin {
+    final sum = _energyDeposits.fold<int>(0, (a, e) => a + e.$2);
     return (sum * (60 / Balance.harvestRateWindowSeconds)).round();
   }
 }

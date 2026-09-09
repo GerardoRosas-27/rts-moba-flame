@@ -6,7 +6,7 @@ import '../game/rts_game.dart';
 import '../game/components/unit.dart';
 
 const _mineralBlue = Color(0xFF00AEEF);
-const _gasGreen = Color(0xFF39FF14);
+const _energyGreen = Color(0xFF39FF14);
 const _panelBg = Color(0xE6111418);
 const _panelBorder = Color(0xFF3A4250);
 
@@ -112,15 +112,15 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           _ResChip(
-            icon: Icons.cloud,
-            color: _gasGreen,
-            value: '${e.gas}',
-            rate: '+${e.gasRatePerMin}/min',
+            icon: Icons.wb_sunny,
+            color: _energyGreen,
+            value: '${e.energy}',
+            rate: '+${e.energyRatePerMin}/min',
           ),
           const SizedBox(width: 12),
           _ResChip(
             icon: Icons.groups,
-            color: _gasGreen,
+            color: _energyGreen,
             value: '${e.supplyUsed}/${e.supplyMax}',
             rate: e.supplyUsed >= e.supplyMax ? 'LLENO' : 'OK',
           ),
@@ -227,7 +227,7 @@ class _ControlGroups extends StatelessWidget {
                   Text(
                     count > 0 ? '$count' : '—',
                     style: TextStyle(
-                      color: count > 0 ? _gasGreen : Colors.white38,
+                      color: count > 0 ? _energyGreen : Colors.white38,
                       fontSize: 10,
                     ),
                   ),
@@ -275,17 +275,23 @@ class _MinimapPainter extends CustomPainter {
     double sy(double y) => y / Balance.mapHeight * size.height;
 
     for (final r in game.resources) {
-      final c = r.kind == ResourceKind.mineral ? _mineralBlue : _gasGreen;
-      canvas.drawCircle(Offset(sx(r.position.x), sy(r.position.y)), 2.5, Paint()..color = c);
+      canvas.drawCircle(
+        Offset(sx(r.position.x), sy(r.position.y)),
+        2.5,
+        Paint()..color = _mineralBlue,
+      );
     }
     for (final b in game.buildings) {
+      final color = b.kind == BuildingKind.solarPanel
+          ? _energyGreen
+          : _mineralBlue;
       canvas.drawRect(
         Rect.fromCenter(
           center: Offset(sx(b.position.x), sy(b.position.y)),
           width: 5,
           height: 5,
         ),
-        Paint()..color = _mineralBlue,
+        Paint()..color = color,
       );
     }
     for (final u in game.units) {
@@ -480,6 +486,7 @@ class _SelectionRow extends StatelessWidget {
 
     if (buildings.isNotEmpty) {
       final b = buildings.first;
+      final pct = (b.buildProgress * 100).clamp(0, 100).floor();
       return SizedBox(
         height: 72,
         child: Row(
@@ -487,9 +494,18 @@ class _SelectionRow extends StatelessWidget {
             _portrait(
               label: b.kind.shortEs,
               hp: '${b.hp}/${b.maxHp}',
-              progress: b.hp / b.maxHp,
-              subtitle: b.isComplete ? b.kind.labelEs : 'Construyendo…',
+              progress: b.isComplete ? b.hp / b.maxHp : b.buildProgress,
+              subtitle: b.isComplete
+                  ? b.kind.labelEs
+                  : 'Obra $pct%',
             ),
+            if (!b.isComplete) ...[
+              const SizedBox(width: 8),
+              _actionChip(
+                'Continuar\nconstruir',
+                () => game.resumeConstruction(b),
+              ),
+            ],
             if (b.canTrainWorkers) ...[
               const SizedBox(width: 8),
               _actionChip(
@@ -510,17 +526,17 @@ class _SelectionRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Barbara\n${Balance.infantryBeeMineralCost}💎/${Balance.infantryBeeGasCost}☁',
+                        'Barbara\n${Balance.infantryBeeMineralCost}💎/${Balance.infantryBeeEnergyCost}☀',
                         () => game.trainUnit(UnitKind.infantryBee),
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Rover\n${Balance.roverMineralCost}💎/${Balance.roverGasCost}☁',
+                        'Rover\n${Balance.roverMineralCost}💎/${Balance.roverEnergyCost}☀',
                         () => game.trainUnit(UnitKind.rover),
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Mech\n${Balance.mechMineralCost}💎/${Balance.mechGasCost}☁',
+                        'Mech\n${Balance.mechMineralCost}💎/${Balance.mechEnergyCost}☀',
                         () => game.trainUnit(UnitKind.mech),
                       ),
                     ],
@@ -600,7 +616,7 @@ class _SelectionRow extends StatelessWidget {
             value: progress.clamp(0.0, 1.0),
             minHeight: 4,
             backgroundColor: Colors.black,
-            color: _gasGreen,
+            color: _energyGreen,
           ),
           Text(hp, style: const TextStyle(color: Colors.white70, fontSize: 8)),
           Text(
@@ -622,7 +638,7 @@ class _SelectionRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1F28),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _gasGreen),
+          border: Border.all(color: _energyGreen),
         ),
         child: Text(
           label,
@@ -719,9 +735,9 @@ class _CommandCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildOption(
                   ctx,
-                  'Refinería',
-                  '${Balance.refineryMineralCost} minerales — sobre géiser',
-                  () => game.enterBuildMode(BuildMode.refinery),
+                  'Panel solar',
+                  '${Balance.solarPanelMineralCost} minerales — +${Balance.energyPerPanelPerMin.toInt()} Energía/min (cualquier sitio)',
+                  () => game.enterBuildMode(BuildMode.solarPanel),
                 ),
                 _buildOption(
                   ctx,

@@ -131,15 +131,6 @@ class RtsGame extends FlameGame
       resources.add(node);
     }
 
-    final geyser = ResourceNode(
-      kind: ResourceKind.gas,
-      position: basePos + Vector2(140, 90),
-      remaining: Balance.gasGeyserAmount,
-      maxAmount: Balance.gasGeyserAmount,
-    );
-    world.add(geyser);
-    resources.add(geyser);
-
     final exp = Vector2(1700, 500);
     for (var i = 0; i < Balance.mineralNodesExpansion; i++) {
       final a = i * 0.35;
@@ -152,14 +143,6 @@ class RtsGame extends FlameGame
       world.add(node);
       resources.add(node);
     }
-    final geyser2 = ResourceNode(
-      kind: ResourceKind.gas,
-      position: exp + Vector2(80, 70),
-      remaining: Balance.gasGeyserAmount,
-      maxAmount: Balance.gasGeyserAmount,
-    );
-    world.add(geyser2);
-    resources.add(geyser2);
 
     camera.viewfinder.position = basePos.clone();
   }
@@ -260,7 +243,7 @@ class RtsGame extends FlameGame
     }
     buildMode = mode;
     final names = {
-      BuildMode.refinery: 'Refinería (SolarPanel — sobre géiser)',
+      BuildMode.solarPanel: 'Panel solar (cualquier sitio válido)',
       BuildMode.supplyDepot: 'Depósito (GeodesicDome)',
       BuildMode.barracks: 'Cuartel (Building_L)',
       BuildMode.outpost: 'Puesto avanzado',
@@ -296,19 +279,19 @@ class RtsGame extends FlameGame
       return;
     }
     final m = Balance.mineralCostOf(kind);
-    final g = Balance.gasCostOf(kind);
+    final e = Balance.energyCostOf(kind);
     final s = Balance.supplyCostOf(kind);
-    if (!economy.canAfford(mineral: m, gasCost: g, supply: s)) {
+    if (!economy.canAfford(mineral: m, energyCost: e, supply: s)) {
       if (economy.supplyUsed + s > economy.supplyMax) {
         showToast('Sin suministro — construye un Depósito');
       } else if (economy.minerals < m) {
         showToast('Minerales insuficientes');
       } else {
-        showToast('Gas insuficiente');
+        showToast('Energía insuficiente — construye Paneles solares');
       }
       return;
     }
-    economy.spend(mineral: m, gasCost: g, supply: s);
+    economy.spend(mineral: m, energyCost: e, supply: s);
     production.enqueue(QueueItem.unit(kind, source));
     showToast('Entrenando ${kind.labelEs}');
     _notifyHud();
@@ -320,7 +303,7 @@ class RtsGame extends FlameGame
     if (index < 0 || index >= production.items.length) return;
     final item = production.items[index];
     economy.minerals += Balance.mineralCostOf(item.kind);
-    economy.gas += Balance.gasCostOf(item.kind);
+    economy.energy += Balance.energyCostOf(item.kind);
     economy.refundSupply(Balance.supplyCostOf(item.kind));
     production.cancelAt(index);
     showToast('Cancelado: ${item.kind.labelEs}');
@@ -341,6 +324,45 @@ class RtsGame extends FlameGame
     return best;
   }
 
+  int get completedSolarPanels =>
+      buildings.where((b) => b.generatesEnergy).length;
+
+  /// Asigna obreros a una obra incompleta sin reiniciar [buildProgress].
+  void resumeConstruction(Building site, {List<GameUnit>? workers}) {
+    if (site.isComplete || site.parent == null) return;
+    final pool = workers ??
+        selectedUnits.where((u) => u.isWorker).toList();
+    var builders = pool.where((u) => u.isWorker).toList();
+    if (builders.isEmpty) {
+      // Botón Continuar: busca obreros cercanos libres / disponibles.
+      builders = units.where((u) => u.isWorker && u.parent != null).toList();
+      builders.sort(
+        (a, b) => a.position
+            .distanceTo(site.position)
+            .compareTo(b.position.distanceTo(site.position)),
+      );
+    } else {
+      builders.sort(
+        (a, b) => a.position
+            .distanceTo(site.position)
+            .compareTo(b.position.distanceTo(site.position)),
+      );
+    }
+    if (builders.isEmpty) {
+      showToast('No hay obreros para continuar');
+      return;
+    }
+    final take = builders.take(Balance.maxBuildersPerSite).toList();
+    for (final w in take) {
+      w.orderBuild(site);
+    }
+    final pct = (site.buildProgress * 100).clamp(0, 99).floor();
+    showToast(
+      'Continuando ${site.kind.labelEs} ($pct%) — ${take.length} obrero(s)',
+    );
+    _notifyHud();
+  }
+
   void _tryPlaceBuilding(Vector2 worldPos) {
     if (buildMode == BuildMode.none) return;
     final workers =
@@ -353,56 +375,42 @@ class RtsGame extends FlameGame
 
     late BuildingKind kind;
     late int mineralCost;
-    late int gasCost;
+    late int energyCost;
     late double buildSecs;
 
     switch (buildMode) {
-      case BuildMode.refinery:
-        kind = BuildingKind.refinery;
-        mineralCost = Balance.refineryMineralCost;
-        gasCost = Balance.refineryGasCost;
-        buildSecs = Balance.refineryBuildSeconds;
+      case BuildMode.solarPanel:
+        kind = BuildingKind.solarPanel;
+        mineralCost = Balance.solarPanelMineralCost;
+        energyCost = Balance.solarPanelEnergyCost;
+        buildSecs = Balance.solarPanelBuildSeconds;
       case BuildMode.supplyDepot:
         kind = BuildingKind.supplyDepot;
         mineralCost = Balance.supplyDepotMineralCost;
-        gasCost = Balance.supplyDepotGasCost;
+        energyCost = Balance.supplyDepotEnergyCost;
         buildSecs = Balance.supplyDepotBuildSeconds;
       case BuildMode.barracks:
         kind = BuildingKind.barracks;
         mineralCost = Balance.barracksMineralCost;
-        gasCost = Balance.barracksGasCost;
+        energyCost = Balance.barracksEnergyCost;
         buildSecs = Balance.barracksBuildSeconds;
       case BuildMode.outpost:
         kind = BuildingKind.outpost;
         mineralCost = Balance.outpostMineralCost;
-        gasCost = Balance.outpostGasCost;
+        energyCost = Balance.outpostEnergyCost;
         buildSecs = Balance.outpostBuildSeconds;
       case BuildMode.commandCenter:
         kind = BuildingKind.commandCenter;
         mineralCost = Balance.ccMineralCost;
-        gasCost = Balance.ccGasCost;
+        energyCost = Balance.ccEnergyCost;
         buildSecs = Balance.ccBuildSeconds;
       case BuildMode.none:
         return;
     }
 
-    ResourceNode? geyser;
-    Vector2 placeAt = worldPos.clone();
+    final placeAt = worldPos.clone();
 
-    if (kind == BuildingKind.refinery) {
-      geyser = _findGeyserNear(worldPos, 60);
-      if (geyser == null) {
-        showToast('Coloca la Refinería sobre un géiser de gas');
-        return;
-      }
-      if (geyser.hasRefinery) {
-        showToast('Ese géiser ya tiene Refinería');
-        return;
-      }
-      placeAt = geyser.position.clone();
-    }
-
-    if (!economy.canAfford(mineral: mineralCost, gasCost: gasCost)) {
+    if (!economy.canAfford(mineral: mineralCost, energyCost: energyCost)) {
       showToast('Recursos insuficientes');
       return;
     }
@@ -414,7 +422,7 @@ class RtsGame extends FlameGame
       }
     }
 
-    economy.spend(mineral: mineralCost, gasCost: gasCost);
+    economy.spend(mineral: mineralCost, energyCost: energyCost);
     final site = Building(
       kind: kind,
       position: placeAt,
@@ -422,10 +430,6 @@ class RtsGame extends FlameGame
     );
     site.buildSecondsNeeded = buildSecs;
     site.buildProgress = 0;
-    if (geyser != null) {
-      site.geyser = geyser;
-      geyser.hasRefinery = true;
-    }
     world.add(site);
     buildings.add(site);
 
@@ -434,27 +438,13 @@ class RtsGame extends FlameGame
           .distanceTo(placeAt)
           .compareTo(b.position.distanceTo(placeAt)),
     );
-    for (final w in workers.take(3)) {
+    for (final w in workers.take(Balance.maxBuildersPerSite)) {
       w.orderBuild(site);
     }
 
     buildMode = BuildMode.none;
     showToast('Construyendo ${kind.labelEs}');
     _notifyHud();
-  }
-
-  ResourceNode? _findGeyserNear(Vector2 pos, double range) {
-    ResourceNode? best;
-    var bestD = range;
-    for (final r in resources) {
-      if (r.kind != ResourceKind.gas) continue;
-      final d = r.position.distanceTo(pos);
-      if (d <= bestD) {
-        bestD = d;
-        best = r;
-      }
-    }
-    return best;
   }
 
   void _onBuildComplete(Building b) {
@@ -466,11 +456,10 @@ class RtsGame extends FlameGame
       case BuildingKind.supplyDepot:
         economy.addSupplyMax(Balance.supplyDepotSupply);
         showToast('Depósito listo (+${Balance.supplyDepotSupply} suministro)');
-      case BuildingKind.refinery:
-        if (b.geyser != null) {
-          b.geyser!.hasRefinery = true;
-        }
-        showToast('Refinería lista — puedes recolectar gas');
+      case BuildingKind.solarPanel:
+        showToast(
+          'Panel solar listo — +${Balance.energyPerPanelPerMin.toInt()} Energía/min',
+        );
       case BuildingKind.barracks:
         showToast('Cuartel listo — produce infantería, rover y mech');
       case BuildingKind.outpost:
@@ -516,6 +505,12 @@ class RtsGame extends FlameGame
       }
     }
     if (hitBuilding != null) {
+      final workersSel = selectedUnits.where((u) => u.isWorker).toList();
+      // Obreros seleccionados + obra incompleta → reanudar sin resetear progreso.
+      if (!hitBuilding.isComplete && workersSel.isNotEmpty) {
+        resumeConstruction(hitBuilding, workers: workersSel);
+        return;
+      }
       selectBuilding(hitBuilding);
       return;
     }
@@ -530,18 +525,10 @@ class RtsGame extends FlameGame
       }
     }
     if (hitNode != null && selectedUnits.any((u) => u.isWorker)) {
-      if (hitNode.kind == ResourceKind.gas && !hitNode.hasRefinery) {
-        showToast('Construye una Refinería sobre el géiser');
-        return;
-      }
       for (final u in selectedUnits) {
         if (u.isWorker) u.orderHarvest(hitNode);
       }
-      showToast(
-        hitNode.kind == ResourceKind.mineral
-            ? 'Recolectando minerales'
-            : 'Recolectando gas',
-      );
+      showToast('Recolectando minerales');
       _notifyHud();
       return;
     }
@@ -624,6 +611,7 @@ class RtsGame extends FlameGame
     super.update(dt);
     missionTime += dt;
     economy.update(dt);
+    economy.tickPassiveEnergy(dt, completedSolarPanels);
 
     if (toastTimer > 0) {
       toastTimer -= dt;
@@ -637,9 +625,8 @@ class RtsGame extends FlameGame
       u.tickAI(
         dt: dt,
         findDeposit: () => _nearestDeposit(u.position),
-        onDeposit: (unit, m, g) {
+        onDeposit: (unit, m) {
           if (m > 0) economy.depositMineral(m);
-          if (g > 0) economy.depositGas(g);
           _notifyHud();
         },
         onBuildComplete: _onBuildComplete,

@@ -5,7 +5,6 @@ import 'package:flame/components.dart';
 import '../assets.dart';
 import '../balance.dart';
 import '../enums.dart';
-import 'resource_node.dart';
 
 class Building extends PositionComponent {
   Building({
@@ -30,14 +29,13 @@ class Building extends PositionComponent {
   late int hp;
   late int maxHp;
   bool selected = false;
-  ResourceNode? geyser;
 
   static double _radiusFor(BuildingKind k) {
     switch (k) {
       case BuildingKind.commandCenter:
         return Balance.ccRadius;
-      case BuildingKind.refinery:
-        return Balance.refineryRadius;
+      case BuildingKind.solarPanel:
+        return Balance.solarPanelRadius;
       case BuildingKind.supplyDepot:
         return Balance.supplyDepotRadius;
       case BuildingKind.barracks:
@@ -51,8 +49,8 @@ class Building extends PositionComponent {
     switch (k) {
       case BuildingKind.commandCenter:
         return Balance.ccMaxHp;
-      case BuildingKind.refinery:
-        return Balance.refineryMaxHp;
+      case BuildingKind.solarPanel:
+        return Balance.solarPanelMaxHp;
       case BuildingKind.supplyDepot:
         return Balance.supplyDepotMaxHp;
       case BuildingKind.barracks:
@@ -71,6 +69,8 @@ class Building extends PositionComponent {
   bool get canTrainWorkers => isComplete && kind == BuildingKind.commandCenter;
 
   bool get canTrainMilitary => isComplete && kind == BuildingKind.barracks;
+
+  bool get generatesEnergy => isComplete && kind == BuildingKind.solarPanel;
 
   @override
   void render(Canvas canvas) {

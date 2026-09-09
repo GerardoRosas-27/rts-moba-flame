@@ -13,14 +13,13 @@ class ResourceNode extends PositionComponent {
     this.maxAmount = 1500,
   }) : super(
           position: position,
-          size: Vector2.all(kind == ResourceKind.mineral ? 28 : 44),
+          size: Vector2.all(28),
           anchor: Anchor.center,
         );
 
   final ResourceKind kind;
   int remaining;
   final int maxAmount;
-  bool hasRefinery = false;
 
   bool get depleted => remaining <= 0;
 
@@ -34,11 +33,7 @@ class ResourceNode extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final center = Offset(size.x / 2, size.y / 2);
-    if (kind == ResourceKind.mineral) {
-      _drawMinerals(canvas, center);
-    } else {
-      _drawGeyser(canvas, center);
-    }
+    _drawMinerals(canvas, center);
   }
 
   void _drawMinerals(Canvas canvas, Offset c) {
@@ -66,26 +61,6 @@ class ResourceNode extends PositionComponent {
     );
     if (depleted) {
       canvas.drawCircle(c, 12, Paint()..color = const Color(0x88000000));
-    }
-  }
-
-  void _drawGeyser(Canvas canvas, Offset c) {
-    final ring = Paint()
-      ..color = const Color(0xFF2A2A2A)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    final fill = Paint()..color = const Color(0xFF1A1A1A);
-    canvas.drawCircle(c, 20, fill);
-    canvas.drawCircle(c, 20, ring);
-    if (!hasRefinery && !depleted) {
-      final gas = Paint()
-        ..color = const Color(0xFF39FF14)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-      canvas.drawCircle(c.translate(0, -8), 6, gas);
-      canvas.drawOval(
-        Rect.fromCenter(center: c.translate(0, -22), width: 10, height: 28),
-        Paint()..color = const Color(0x8839FF14),
-      );
     }
   }
 }

@@ -103,13 +103,10 @@ class GameUnit extends PositionComponent {
     }
 
     if (isCarrying) {
-      final cargoColor = carryingKind == ResourceKind.gas
-          ? const Color(0xFF39FF14)
-          : const Color(0xFF00AEEF);
       canvas.drawCircle(
         c.translate(radius * 0.7, -radius * 0.5),
         5,
-        Paint()..color = cargoColor,
+        Paint()..color = const Color(0xFF00AEEF),
       );
     }
 
@@ -140,7 +137,7 @@ class GameUnit extends PositionComponent {
   void tickAI({
     required double dt,
     required Building? Function() findDeposit,
-    required void Function(GameUnit u, int minerals, int gas) onDeposit,
+    required void Function(GameUnit u, int minerals) onDeposit,
     required void Function(Building b) onBuildComplete,
   }) {
     if (holdPosition && job == WorkerJob.holding) return;
@@ -159,6 +156,7 @@ class GameUnit extends PositionComponent {
         return;
       }
       job = WorkerJob.building;
+      // Varios obreros suman progreso (aceleran); no se reinicia buildProgress.
       site.buildProgress += dt / site.buildSecondsNeeded;
       if (site.buildProgress >= 1) {
         site.buildProgress = 1;
@@ -187,7 +185,7 @@ class GameUnit extends PositionComponent {
   void _tickHarvest(
     double dt,
     Building? Function() findDeposit,
-    void Function(GameUnit u, int minerals, int gas) onDeposit,
+    void Function(GameUnit u, int minerals) onDeposit,
   ) {
     if (isCarrying) {
       depositTarget ??= findDeposit();
@@ -203,11 +201,7 @@ class GameUnit extends PositionComponent {
         return;
       }
       job = WorkerJob.depositing;
-      if (carryingKind == ResourceKind.mineral) {
-        onDeposit(this, carryingAmount, 0);
-      } else {
-        onDeposit(this, 0, carryingAmount);
-      }
+      onDeposit(this, carryingAmount);
       carryingAmount = 0;
       carryingKind = null;
       depositTarget = null;
@@ -227,11 +221,6 @@ class GameUnit extends PositionComponent {
       job = WorkerJob.idle;
       return;
     }
-    if (node.kind == ResourceKind.gas && !node.hasRefinery) {
-      harvestTarget = null;
-      job = WorkerJob.idle;
-      return;
-    }
 
     final dist = position.distanceTo(node.position);
     if (dist > Balance.harvestNodeRange) {
@@ -244,13 +233,10 @@ class GameUnit extends PositionComponent {
     gatherTimer += dt;
     if (gatherTimer >= Balance.harvestGatherSeconds) {
       gatherTimer = 0;
-      final amount = node.kind == ResourceKind.mineral
-          ? Balance.mineralCarryAmount
-          : Balance.gasCarryAmount;
-      final taken = node.take(amount);
+      final taken = node.take(Balance.mineralCarryAmount);
       if (taken > 0) {
         carryingAmount = taken;
-        carryingKind = node.kind;
+        carryingKind = ResourceKind.mineral;
         depositTarget = findDeposit();
         job = WorkerJob.carrying;
       } else {
