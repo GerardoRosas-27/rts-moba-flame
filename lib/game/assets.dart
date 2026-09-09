@@ -26,6 +26,7 @@ class GameAssets {
     'building_house_long.png',
     'building_house_cylinder.png',
     'building_house_single.png',
+    'building_house_open.png',
     'building_roof_radar.png',
     'building_solarpanel_ground.png',
     // Units
@@ -33,13 +34,17 @@ class GameAssets {
     'unit_astronaut_fernando.png',
     'unit_astronaut_finn.png',
     'unit_astronaut_rae.png',
-    // Vehicles
+    // Vehicles / ships (stubs Quaternius hasta kit Ultimate Spaceships)
     'vehicle_rover_1.png',
     'vehicle_rover_2.png',
     'vehicle_rover_round.png',
     'vehicle_mech_finn.png',
     'vehicle_mech_barbara.png',
     'vehicle_mech_rae.png',
+    'vehicle_spaceship_rae.png',
+    'vehicle_spaceship_finn.png',
+    'vehicle_spaceship_barbara.png',
+    'vehicle_spaceship_fernando.png',
     // Props
     'prop_rock_1.png',
     'prop_rock_2.png',
@@ -91,6 +96,10 @@ class GameAssets {
         return get('building_l.png');
       case BuildingKind.outpost:
         return get('building_house_cylinder.png');
+      case BuildingKind.laboratory:
+        return get('building_roof_radar.png');
+      case BuildingKind.starport:
+        return get('building_house_open.png');
     }
   }
 
@@ -106,6 +115,17 @@ class GameAssets {
         return get('vehicle_rover_1.png');
       case UnitKind.mech:
         return get('vehicle_mech_finn.png');
+      case UnitKind.shipCaza:
+        return get('vehicle_spaceship_rae.png');
+      case UnitKind.shipInterceptor:
+        return get('vehicle_spaceship_finn.png');
+      case UnitKind.shipFragata:
+        return get('vehicle_spaceship_barbara.png');
+      case UnitKind.shipCrucero:
+        return get('vehicle_spaceship_fernando.png');
+      case UnitKind.shipAcorazado:
+        // Stub: mismo sprite Fernando a mayor tamaño en juego.
+        return get('vehicle_spaceship_fernando.png');
     }
   }
 }

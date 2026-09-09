@@ -16,11 +16,13 @@ import 'components/unit.dart';
 import 'enums.dart';
 import 'systems/economy.dart';
 import 'systems/production.dart';
+import 'systems/research.dart';
 
 class RtsGame extends FlameGame
     with MultiTouchDragDetector, ScaleDetector, TapCallbacks {
   final Economy economy = Economy();
   final ProductionQueue production = ProductionQueue();
+  final ResearchQueue research = ResearchQueue();
 
   final List<GameUnit> units = [];
   final List<Building> buildings = [];
@@ -225,20 +227,24 @@ class RtsGame extends FlameGame
   }
 
   void commandAttackStub() {
-    showToast('Ataque: stub en v0.2 — priorizamos producción');
+    showToast('Ataque: stub en v0.3 — priorizamos naves/tech');
   }
 
   void commandPatrolStub() {
-    showToast('Patrulla: stub en v0.2');
+    showToast('Patrulla: stub en v0.3');
   }
 
   void commandSpecialStub() {
-    showToast('Especial: stub en v0.2');
+    showToast('Especial: stub en v0.3');
   }
 
   void enterBuildMode(BuildMode mode) {
     if (selectedUnits.where((u) => u.isWorker).isEmpty) {
       showToast('Selecciona obreros para construir');
+      return;
+    }
+    if (mode == BuildMode.starport && !research.shipConstructionUnlocked) {
+      showToast('Investiga «Construcción de naves» en el Laboratorio');
       return;
     }
     buildMode = mode;
@@ -248,6 +254,8 @@ class RtsGame extends FlameGame
       BuildMode.barracks: 'Cuartel (Building_L)',
       BuildMode.outpost: 'Puesto avanzado',
       BuildMode.commandCenter: 'Centro de mando (Base_Large)',
+      BuildMode.laboratory: 'Laboratorio (Roof_Radar)',
+      BuildMode.starport: 'Puerto estelar (House_Open)',
     };
     showToast('Construir: ${names[mode] ?? mode.name}');
     _notifyHud();
@@ -264,15 +272,29 @@ class RtsGame extends FlameGame
   }
 
   void trainUnit(UnitKind kind) {
-    final needsBarracks = kind != UnitKind.worker;
-    final source = needsBarracks
-        ? _findTrainer(pred: (b) => b.canTrainMilitary)
-        : _findTrainer(pred: (b) => b.canTrainWorkers);
-    if (source == null) {
-      showToast(needsBarracks
-          ? 'Necesitas un Cuartel completo'
-          : 'Necesitas un Centro de Mando');
-      return;
+    final Building? source;
+    if (kind == UnitKind.worker) {
+      source = _findTrainer(pred: (b) => b.canTrainWorkers);
+      if (source == null) {
+        showToast('Necesitas un Centro de Mando');
+        return;
+      }
+    } else if (kind.isShip) {
+      if (!research.shipConstructionUnlocked) {
+        showToast('Investiga «Construcción de naves» primero');
+        return;
+      }
+      source = _findTrainer(pred: (b) => b.canTrainShips);
+      if (source == null) {
+        showToast('Necesitas un Puerto estelar completo');
+        return;
+      }
+    } else {
+      source = _findTrainer(pred: (b) => b.canTrainMilitary);
+      if (source == null) {
+        showToast('Necesitas un Cuartel completo');
+        return;
+      }
     }
     if (production.isFull) {
       showToast('Cola llena');
@@ -298,6 +320,46 @@ class RtsGame extends FlameGame
   }
 
   void trainWorker() => trainUnit(UnitKind.worker);
+
+  void researchTech(TechKind kind) {
+    final source = _findTrainer(pred: (b) => b.canResearch);
+    if (source == null) {
+      showToast('Necesitas un Laboratorio completo');
+      return;
+    }
+    if (research.isUnlocked(kind)) {
+      showToast('${kind.labelEs} ya investigado');
+      return;
+    }
+    if (research.isBusy) {
+      showToast('Investigación en curso');
+      return;
+    }
+    final m = Balance.techMineralCostOf(kind);
+    final e = Balance.techEnergyCostOf(kind);
+    if (!economy.canAfford(mineral: m, energyCost: e)) {
+      if (economy.minerals < m) {
+        showToast('Minerales insuficientes');
+      } else {
+        showToast('Energía insuficiente — construye Paneles solares');
+      }
+      return;
+    }
+    economy.spend(mineral: m, energyCost: e);
+    research.enqueue(ResearchItem.tech(kind, source));
+    showToast('Investigando ${kind.labelEs}');
+    _notifyHud();
+  }
+
+  void cancelResearch() {
+    if (research.isEmpty) return;
+    final item = research.items.first;
+    economy.minerals += Balance.techMineralCostOf(item.kind);
+    economy.energy += Balance.techEnergyCostOf(item.kind);
+    research.cancel();
+    showToast('Investigación cancelada: ${item.kind.labelEs}');
+    _notifyHud();
+  }
 
   void cancelQueueAt(int index) {
     if (index < 0 || index >= production.items.length) return;
@@ -404,6 +466,20 @@ class RtsGame extends FlameGame
         mineralCost = Balance.ccMineralCost;
         energyCost = Balance.ccEnergyCost;
         buildSecs = Balance.ccBuildSeconds;
+      case BuildMode.laboratory:
+        kind = BuildingKind.laboratory;
+        mineralCost = Balance.laboratoryMineralCost;
+        energyCost = Balance.laboratoryEnergyCost;
+        buildSecs = Balance.laboratoryBuildSeconds;
+      case BuildMode.starport:
+        if (!research.shipConstructionUnlocked) {
+          showToast('Investiga «Construcción de naves» en el Laboratorio');
+          return;
+        }
+        kind = BuildingKind.starport;
+        mineralCost = Balance.starportMineralCost;
+        energyCost = Balance.starportEnergyCost;
+        buildSecs = Balance.starportBuildSeconds;
       case BuildMode.none:
         return;
     }
@@ -464,6 +540,10 @@ class RtsGame extends FlameGame
         showToast('Cuartel listo — produce infantería, rover y mech');
       case BuildingKind.outpost:
         showToast('Puesto avanzado listo — punto de depósito');
+      case BuildingKind.laboratory:
+        showToast('Laboratorio listo — panel Investigar');
+      case BuildingKind.starport:
+        showToast('Puerto estelar listo — produce naves');
     }
     _notifyHud();
   }
@@ -635,11 +715,22 @@ class RtsGame extends FlameGame
 
     final finished = production.update(dt);
     for (final item in finished) {
-      final spawnNear = item.source.position + Vector2(70, 40);
+      final offset = item.kind.isShip ? Vector2(90, -30) : Vector2(70, 40);
+      final spawnNear = item.source.position + offset;
       final u = GameUnit(kind: item.kind, position: spawnNear);
       world.add(u);
       units.add(u);
       showToast('${item.kind.labelEs} listo');
+      _notifyHud();
+    }
+
+    final researched = research.update(dt);
+    for (final item in researched) {
+      if (item.kind == TechKind.shipConstruction) {
+        showToast('¡Tech listo! Puedes construir el Puerto estelar');
+      } else {
+        showToast('${item.kind.labelEs} investigado');
+      }
       _notifyHud();
     }
 

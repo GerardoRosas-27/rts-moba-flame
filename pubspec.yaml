@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2.2: Energía (paneles solares) + reanudar construcción."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.3.0: Laboratorio, tech naves, Puerto estelar."
 publish_to: 'none'
-version: 0.2.2+4
+version: 0.3.0+5
 
 environment:
   sdk: ^3.13.2

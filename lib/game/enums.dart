@@ -6,6 +6,8 @@ enum BuildingKind {
   supplyDepot,
   barracks,
   outpost,
+  laboratory,
+  starport,
 }
 
 enum UnitKind {
@@ -14,6 +16,15 @@ enum UnitKind {
   infantryBee,
   rover,
   mech,
+  shipCaza,
+  shipInterceptor,
+  shipFragata,
+  shipCrucero,
+  shipAcorazado,
+}
+
+enum TechKind {
+  shipConstruction,
 }
 
 enum CommandAction {
@@ -32,6 +43,8 @@ enum BuildMode {
   barracks,
   outpost,
   commandCenter,
+  laboratory,
+  starport,
 }
 
 enum WorkerJob {
@@ -57,6 +70,10 @@ extension BuildingKindLabel on BuildingKind {
         return 'Cuartel';
       case BuildingKind.outpost:
         return 'Puesto Avanzado';
+      case BuildingKind.laboratory:
+        return 'Laboratorio';
+      case BuildingKind.starport:
+        return 'Puerto estelar';
     }
   }
 
@@ -72,6 +89,10 @@ extension BuildingKindLabel on BuildingKind {
         return 'CUA';
       case BuildingKind.outpost:
         return 'PA';
+      case BuildingKind.laboratory:
+        return 'LAB';
+      case BuildingKind.starport:
+        return 'PUE';
     }
   }
 
@@ -87,6 +108,10 @@ extension BuildingKindLabel on BuildingKind {
         return 'Building_L';
       case BuildingKind.outpost:
         return 'House_Cylinder';
+      case BuildingKind.laboratory:
+        return 'Roof_Radar';
+      case BuildingKind.starport:
+        return 'House_Open';
     }
   }
 }
@@ -104,6 +129,16 @@ extension UnitKindLabel on UnitKind {
         return 'Rover';
       case UnitKind.mech:
         return 'Mech';
+      case UnitKind.shipCaza:
+        return 'Caza';
+      case UnitKind.shipInterceptor:
+        return 'Interceptor';
+      case UnitKind.shipFragata:
+        return 'Fragata';
+      case UnitKind.shipCrucero:
+        return 'Crucero';
+      case UnitKind.shipAcorazado:
+        return 'Acorazado';
     }
   }
 
@@ -119,6 +154,16 @@ extension UnitKindLabel on UnitKind {
         return 'ROV';
       case UnitKind.mech:
         return 'MEC';
+      case UnitKind.shipCaza:
+        return 'CAZ';
+      case UnitKind.shipInterceptor:
+        return 'INT';
+      case UnitKind.shipFragata:
+        return 'FRA';
+      case UnitKind.shipCrucero:
+        return 'CRU';
+      case UnitKind.shipAcorazado:
+        return 'ACO';
     }
   }
 
@@ -134,9 +179,41 @@ extension UnitKindLabel on UnitKind {
         return 'Rover_1';
       case UnitKind.mech:
         return 'Mech_FinnTheFrog';
+      case UnitKind.shipCaza:
+        return 'Spaceship_RaeTheRedPanda';
+      case UnitKind.shipInterceptor:
+        return 'Spaceship_FinnTheFrog';
+      case UnitKind.shipFragata:
+        return 'Spaceship_BarbaraTheBee';
+      case UnitKind.shipCrucero:
+        return 'Spaceship_FernandoTheFlamingo';
+      case UnitKind.shipAcorazado:
+        return 'Spaceship_FernandoTheFlamingo';
     }
   }
 
   bool get canHarvest => this == UnitKind.worker;
   bool get canBuild => this == UnitKind.worker;
+  bool get isShip =>
+      this == UnitKind.shipCaza ||
+      this == UnitKind.shipInterceptor ||
+      this == UnitKind.shipFragata ||
+      this == UnitKind.shipCrucero ||
+      this == UnitKind.shipAcorazado;
+}
+
+extension TechKindLabel on TechKind {
+  String get labelEs {
+    switch (this) {
+      case TechKind.shipConstruction:
+        return 'Construcción de naves';
+    }
+  }
+
+  String get shortEs {
+    switch (this) {
+      case TechKind.shipConstruction:
+        return 'NAV';
+    }
+  }
 }

@@ -113,3 +113,18 @@ License: see `License.txt` (CC0 1.0 Public Domain Dedication)
 ```
 
 Note: an older experimental set may exist under `out/`; prefer the root-level PNGs listed above.
+
+
+## v0.3.0 roles
+
+| Role | Sprite | Notes |
+|------|--------|-------|
+| Laboratorio | `building_roof_radar.png` | Investigación (tech naves) |
+| Puerto estelar | `building_house_open.png` | Produce 5 naves |
+| Caza | `vehicle_spaceship_rae.png` | Tier 1 stub |
+| Interceptor | `vehicle_spaceship_finn.png` | Tier 2 stub |
+| Fragata | `vehicle_spaceship_barbara.png` | Tier 3 stub |
+| Crucero | `vehicle_spaceship_fernando.png` | Tier 4 stub |
+| Acorazado | `vehicle_spaceship_fernando.png` | Tier 5 stub (mismo sprite, mayor tamaño) |
+
+Hasta que lleguen sprites de `/workspace/rts-ships-sprites/` o kit Ultimate Spaceships, se usan stubs Quaternius `vehicle_spaceship_*`.

@@ -42,6 +42,10 @@ class Building extends PositionComponent {
         return Balance.barracksRadius;
       case BuildingKind.outpost:
         return Balance.outpostRadius;
+      case BuildingKind.laboratory:
+        return Balance.laboratoryRadius;
+      case BuildingKind.starport:
+        return Balance.starportRadius;
     }
   }
 
@@ -57,6 +61,10 @@ class Building extends PositionComponent {
         return Balance.barracksMaxHp;
       case BuildingKind.outpost:
         return Balance.outpostMaxHp;
+      case BuildingKind.laboratory:
+        return Balance.laboratoryMaxHp;
+      case BuildingKind.starport:
+        return Balance.starportMaxHp;
     }
   }
 
@@ -69,6 +77,10 @@ class Building extends PositionComponent {
   bool get canTrainWorkers => isComplete && kind == BuildingKind.commandCenter;
 
   bool get canTrainMilitary => isComplete && kind == BuildingKind.barracks;
+
+  bool get canResearch => isComplete && kind == BuildingKind.laboratory;
+
+  bool get canTrainShips => isComplete && kind == BuildingKind.starport;
 
   bool get generatesEnergy => isComplete && kind == BuildingKind.solarPanel;
 

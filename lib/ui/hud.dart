@@ -284,7 +284,10 @@ class _MinimapPainter extends CustomPainter {
     for (final b in game.buildings) {
       final color = b.kind == BuildingKind.solarPanel
           ? _energyGreen
-          : _mineralBlue;
+          : (b.kind == BuildingKind.laboratory ||
+                  b.kind == BuildingKind.starport)
+              ? const Color(0xFFB388FF)
+              : _mineralBlue;
       canvas.drawRect(
         Rect.fromCenter(
           center: Offset(sx(b.position.x), sy(b.position.y)),
@@ -400,14 +403,37 @@ class _ProductionQueueRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'COLA DE PRODUCCIÓN  ${items.length}/${Balance.maxQueueSlots}',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
+        Row(
+          children: [
+            Text(
+              'COLA DE PRODUCCIÓN  ${items.length}/${Balance.maxQueueSlots}',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const Spacer(),
+            if (game.research.shipConstructionUnlocked)
+              const Text(
+                'TECH NAVES ✓',
+                style: TextStyle(
+                  color: _energyGreen,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else if (game.research.isBusy && game.research.items.isNotEmpty)
+              Text(
+                'INV ${game.research.items.first.kind.shortEs} ${game.research.items.first.remaining.ceil()}s',
+                style: const TextStyle(
+                  color: Color(0xFFB388FF),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -538,6 +564,82 @@ class _SelectionRow extends StatelessWidget {
                       _actionChip(
                         'Mech\n${Balance.mechMineralCost}💎/${Balance.mechEnergyCost}☀',
                         () => game.trainUnit(UnitKind.mech),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (b.canResearch) ...[
+              const SizedBox(width: 6),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Text(
+                          'INVESTIGAR',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (game.research.shipConstructionUnlocked)
+                        _actionChip('Naves\nLISTO ✓', () {
+                          game.showToast('«Construcción de naves» ya investigado');
+                        })
+                      else if (game.research.isBusy &&
+                          game.research.items.isNotEmpty &&
+                          game.research.items.first.kind ==
+                              TechKind.shipConstruction)
+                        _actionChip(
+                          'Naves\n${game.research.items.first.remaining.ceil()}s',
+                          () => game.cancelResearch(),
+                        )
+                      else
+                        _actionChip(
+                          'Naves\n${Balance.techShipConstructionMineralCost}💎/${Balance.techShipConstructionEnergyCost}☀',
+                          () => game.researchTech(TechKind.shipConstruction),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (b.canTrainShips) ...[
+              const SizedBox(width: 6),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _actionChip(
+                        'Caza\n${Balance.shipCazaMineralCost}💎/${Balance.shipCazaEnergyCost}☀',
+                        () => game.trainUnit(UnitKind.shipCaza),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Interceptor\n${Balance.shipInterceptorMineralCost}💎/${Balance.shipInterceptorEnergyCost}☀',
+                        () => game.trainUnit(UnitKind.shipInterceptor),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Fragata\n${Balance.shipFragataMineralCost}💎/${Balance.shipFragataEnergyCost}☀',
+                        () => game.trainUnit(UnitKind.shipFragata),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Crucero\n${Balance.shipCruceroMineralCost}💎/${Balance.shipCruceroEnergyCost}☀',
+                        () => game.trainUnit(UnitKind.shipCrucero),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Acorazado\n${Balance.shipAcorazadoMineralCost}💎/${Balance.shipAcorazadoEnergyCost}☀',
+                        () => game.trainUnit(UnitKind.shipAcorazado),
                       ),
                     ],
                   ),
@@ -762,6 +864,22 @@ class _CommandCard extends StatelessWidget {
                   'Centro de Mando',
                   '${Balance.ccMineralCost} minerales — expansión',
                   () => game.enterBuildMode(BuildMode.commandCenter),
+                ),
+                _buildOption(
+                  ctx,
+                  'Laboratorio',
+                  '${Balance.laboratoryMineralCost} minerales / ${Balance.laboratoryEnergyCost} Energía — investigación',
+                  () => game.enterBuildMode(BuildMode.laboratory),
+                ),
+                _buildOption(
+                  ctx,
+                  game.research.shipConstructionUnlocked
+                      ? 'Puerto estelar'
+                      : 'Puerto estelar (bloqueado)',
+                  game.research.shipConstructionUnlocked
+                      ? '${Balance.starportMineralCost} minerales / ${Balance.starportEnergyCost} Energía — produce naves'
+                      : 'Requiere tech «Construcción de naves»',
+                  () => game.enterBuildMode(BuildMode.starport),
                 ),
               ],
             ),

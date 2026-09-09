@@ -1,6 +1,6 @@
 import 'enums.dart';
 
-/// Feel numbers for v0.2.2 — Energía (paneles solares) + reanudar construcción.
+/// Feel numbers for v0.3.0 — Laboratorio + tech naves + Puerto estelar.
 class Balance {
   // --- Start ---
   static const int startMinerals = 150;
@@ -63,6 +63,52 @@ class Balance {
   static const double mechRadius = 26;
   static const int mechMaxHp = 220;
 
+  // --- Ships (tier 1→5) ---
+  static const int shipCazaMineralCost = 75;
+  static const int shipCazaEnergyCost = 25;
+  static const int shipCazaSupplyCost = 2;
+  static const double shipCazaTrainSeconds = 20;
+  static const double shipCazaSpeed = 140;
+  static const double shipCazaRadius = 16;
+  static const int shipCazaMaxHp = 80;
+
+  static const int shipInterceptorMineralCost = 100;
+  static const int shipInterceptorEnergyCost = 40;
+  static const int shipInterceptorSupplyCost = 2;
+  static const double shipInterceptorTrainSeconds = 25;
+  static const double shipInterceptorSpeed = 155;
+  static const double shipInterceptorRadius = 18;
+  static const int shipInterceptorMaxHp = 100;
+
+  static const int shipFragataMineralCost = 150;
+  static const int shipFragataEnergyCost = 60;
+  static const int shipFragataSupplyCost = 3;
+  static const double shipFragataTrainSeconds = 35;
+  static const double shipFragataSpeed = 110;
+  static const double shipFragataRadius = 22;
+  static const int shipFragataMaxHp = 160;
+
+  static const int shipCruceroMineralCost = 225;
+  static const int shipCruceroEnergyCost = 90;
+  static const int shipCruceroSupplyCost = 4;
+  static const double shipCruceroTrainSeconds = 50;
+  static const double shipCruceroSpeed = 90;
+  static const double shipCruceroRadius = 28;
+  static const int shipCruceroMaxHp = 280;
+
+  static const int shipAcorazadoMineralCost = 350;
+  static const int shipAcorazadoEnergyCost = 150;
+  static const int shipAcorazadoSupplyCost = 6;
+  static const double shipAcorazadoTrainSeconds = 75;
+  static const double shipAcorazadoSpeed = 65;
+  static const double shipAcorazadoRadius = 36;
+  static const int shipAcorazadoMaxHp = 450;
+
+  // --- Tech ---
+  static const int techShipConstructionMineralCost = 150;
+  static const int techShipConstructionEnergyCost = 100;
+  static const double techShipConstructionSeconds = 60;
+
   // --- Resources ---
   static const int mineralNodeAmount = 1500;
   static const int mineralNodesNearBase = 8;
@@ -108,6 +154,18 @@ class Balance {
   static const double outpostRadius = 40;
   static const int outpostMaxHp = 600;
 
+  static const int laboratoryMineralCost = 150;
+  static const int laboratoryEnergyCost = 50;
+  static const double laboratoryBuildSeconds = 40;
+  static const double laboratoryRadius = 44;
+  static const int laboratoryMaxHp = 700;
+
+  static const int starportMineralCost = 200;
+  static const int starportEnergyCost = 100;
+  static const double starportBuildSeconds = 50;
+  static const double starportRadius = 56;
+  static const int starportMaxHp = 1000;
+
   static const int maxQueueSlots = 6;
   static const double harvestRateWindowSeconds = 60;
 
@@ -123,6 +181,16 @@ class Balance {
         return roverMineralCost;
       case UnitKind.mech:
         return mechMineralCost;
+      case UnitKind.shipCaza:
+        return shipCazaMineralCost;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorMineralCost;
+      case UnitKind.shipFragata:
+        return shipFragataMineralCost;
+      case UnitKind.shipCrucero:
+        return shipCruceroMineralCost;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoMineralCost;
     }
   }
 
@@ -138,6 +206,16 @@ class Balance {
         return roverEnergyCost;
       case UnitKind.mech:
         return mechEnergyCost;
+      case UnitKind.shipCaza:
+        return shipCazaEnergyCost;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorEnergyCost;
+      case UnitKind.shipFragata:
+        return shipFragataEnergyCost;
+      case UnitKind.shipCrucero:
+        return shipCruceroEnergyCost;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoEnergyCost;
     }
   }
 
@@ -153,6 +231,16 @@ class Balance {
         return roverSupplyCost;
       case UnitKind.mech:
         return mechSupplyCost;
+      case UnitKind.shipCaza:
+        return shipCazaSupplyCost;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorSupplyCost;
+      case UnitKind.shipFragata:
+        return shipFragataSupplyCost;
+      case UnitKind.shipCrucero:
+        return shipCruceroSupplyCost;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoSupplyCost;
     }
   }
 
@@ -168,6 +256,16 @@ class Balance {
         return roverTrainSeconds;
       case UnitKind.mech:
         return mechTrainSeconds;
+      case UnitKind.shipCaza:
+        return shipCazaTrainSeconds;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorTrainSeconds;
+      case UnitKind.shipFragata:
+        return shipFragataTrainSeconds;
+      case UnitKind.shipCrucero:
+        return shipCruceroTrainSeconds;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoTrainSeconds;
     }
   }
 
@@ -183,6 +281,16 @@ class Balance {
         return roverRadius;
       case UnitKind.mech:
         return mechRadius;
+      case UnitKind.shipCaza:
+        return shipCazaRadius;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorRadius;
+      case UnitKind.shipFragata:
+        return shipFragataRadius;
+      case UnitKind.shipCrucero:
+        return shipCruceroRadius;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoRadius;
     }
   }
 
@@ -198,6 +306,16 @@ class Balance {
         return roverSpeed;
       case UnitKind.mech:
         return mechSpeed;
+      case UnitKind.shipCaza:
+        return shipCazaSpeed;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorSpeed;
+      case UnitKind.shipFragata:
+        return shipFragataSpeed;
+      case UnitKind.shipCrucero:
+        return shipCruceroSpeed;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoSpeed;
     }
   }
 
@@ -213,6 +331,37 @@ class Balance {
         return roverMaxHp;
       case UnitKind.mech:
         return mechMaxHp;
+      case UnitKind.shipCaza:
+        return shipCazaMaxHp;
+      case UnitKind.shipInterceptor:
+        return shipInterceptorMaxHp;
+      case UnitKind.shipFragata:
+        return shipFragataMaxHp;
+      case UnitKind.shipCrucero:
+        return shipCruceroMaxHp;
+      case UnitKind.shipAcorazado:
+        return shipAcorazadoMaxHp;
+    }
+  }
+
+  static int techMineralCostOf(TechKind kind) {
+    switch (kind) {
+      case TechKind.shipConstruction:
+        return techShipConstructionMineralCost;
+    }
+  }
+
+  static int techEnergyCostOf(TechKind kind) {
+    switch (kind) {
+      case TechKind.shipConstruction:
+        return techShipConstructionEnergyCost;
+    }
+  }
+
+  static double researchSecondsOf(TechKind kind) {
+    switch (kind) {
+      case TechKind.shipConstruction:
+        return techShipConstructionSeconds;
     }
   }
 }
