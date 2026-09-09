@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.3.0: Laboratorio, tech naves, Puerto estelar."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.3.1: sprites Ultimate Spaceships en Puerto estelar."
 publish_to: 'none'
-version: 0.3.0+5
+version: 0.3.1+6
 
 environment:
   sdk: ^3.13.2

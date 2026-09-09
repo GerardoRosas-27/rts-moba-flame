@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import 'enums.dart';
 
-/// Quaternius Ultimate Platformer Pack sprites (CC0) — see assets/License.txt.
+/// Quaternius sprites (CC0) — Platformer Pack + Ultimate Spaceships.
+/// See assets/License.txt.
 ///
 /// Keys are filenames only: Flame [Images.prefix] is already `assets/images/`.
 class GameAssets {
@@ -34,17 +35,18 @@ class GameAssets {
     'unit_astronaut_fernando.png',
     'unit_astronaut_finn.png',
     'unit_astronaut_rae.png',
-    // Vehicles / ships (stubs Quaternius hasta kit Ultimate Spaceships)
+    // Vehicles / ships (Ultimate Spaceships para tiers de Puerto estelar)
     'vehicle_rover_1.png',
     'vehicle_rover_2.png',
     'vehicle_rover_round.png',
     'vehicle_mech_finn.png',
     'vehicle_mech_barbara.png',
     'vehicle_mech_rae.png',
-    'vehicle_spaceship_rae.png',
-    'vehicle_spaceship_finn.png',
-    'vehicle_spaceship_barbara.png',
-    'vehicle_spaceship_fernando.png',
+    'ship_tier1_dispatcher.png',
+    'ship_tier2_bob.png',
+    'ship_tier3_challenger.png',
+    'ship_tier4_imperial.png',
+    'ship_tier5_insurgent.png',
     // Props
     'prop_rock_1.png',
     'prop_rock_2.png',
@@ -116,16 +118,15 @@ class GameAssets {
       case UnitKind.mech:
         return get('vehicle_mech_finn.png');
       case UnitKind.shipCaza:
-        return get('vehicle_spaceship_rae.png');
+        return get('ship_tier1_dispatcher.png');
       case UnitKind.shipInterceptor:
-        return get('vehicle_spaceship_finn.png');
+        return get('ship_tier2_bob.png');
       case UnitKind.shipFragata:
-        return get('vehicle_spaceship_barbara.png');
+        return get('ship_tier3_challenger.png');
       case UnitKind.shipCrucero:
-        return get('vehicle_spaceship_fernando.png');
+        return get('ship_tier4_imperial.png');
       case UnitKind.shipAcorazado:
-        // Stub: mismo sprite Fernando a mayor tamaño en juego.
-        return get('vehicle_spaceship_fernando.png');
+        return get('ship_tier5_insurgent.png');
     }
   }
 }

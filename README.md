@@ -4,12 +4,27 @@ RTS móvil 2D (top-down / ¾) con **Flutter + Flame**. UI en **español**.
 
 Repo: [GerardoRosas-27/rts-moba-flame](https://github.com/GerardoRosas-27/rts-moba-flame)
 
+## v0.3.1 — Sprites Ultimate Spaceships (Puerto estelar)
+
+- Sustituye stubs Quaternius `vehicle_spaceship_*` por renders CC0 del kit **Ultimate Spaceships** (May 2021, variante azul).
+- 5 tiers del Puerto estelar: **Caza / Interceptor / Fragata / Crucero / Acorazado**.
+- Claves Flame sin prefijo `images/` (mismo convenio que v0.2.1).
+
+| Nave | Sprite | Modelo Quaternius |
+|------|--------|-------------------|
+| Caza | `ship_tier1_dispatcher.png` | Dispatcher |
+| Interceptor | `ship_tier2_bob.png` | Bob |
+| Fragata | `ship_tier3_challenger.png` | Challenger |
+| Crucero | `ship_tier4_imperial.png` | Imperial |
+| Acorazado | `ship_tier5_insurgent.png` | Insurgent |
+
+Se mantienen costos / balance de v0.3.0 (Laboratorio, tech «Construcción de naves», Puerto estelar).
+
 ## v0.3.0 — Laboratorio + Construcción de naves + Puerto estelar
 
 - Nuevo edificio **Laboratorio** (`building_roof_radar.png`) — obreros; al seleccionarlo: panel **Investigar**.
 - Tech v0.3: **«Construcción de naves»** (minerales + Energía + tiempo). Al completar → flag global de desbloqueo.
 - Tras la tech: se habilita **Puerto estelar** (`building_house_open.png`) — cola de producción de **5 naves** (tier 1→5).
-- Naves (stubs Quaternius `vehicle_spaceship_*`): **Caza / Interceptor / Fragata / Crucero / Acorazado**.
 - Se mantienen: Energía por paneles solares, harvest de minerales, obras incompletas reanudables (v0.2.2).
 
 ### Costos tech (v0.3)
@@ -27,13 +42,13 @@ Repo: [GerardoRosas-27/rts-moba-flame](https://github.com/GerardoRosas-27/rts-mo
 
 ### Costos naves (Puerto estelar)
 
-| Nave | Minerales | Energía | Suministro | Tiempo | Sprite stub |
-|------|-----------|---------|------------|--------|-------------|
-| Caza | 75 | 25 | 2 | 20 s | `vehicle_spaceship_rae.png` |
-| Interceptor | 100 | 40 | 2 | 25 s | `vehicle_spaceship_finn.png` |
-| Fragata | 150 | 60 | 3 | 35 s | `vehicle_spaceship_barbara.png` |
-| Crucero | 225 | 90 | 4 | 50 s | `vehicle_spaceship_fernando.png` |
-| Acorazado | 350 | 150 | 6 | 75 s | `vehicle_spaceship_fernando.png` (mayor) |
+| Nave | Minerales | Energía | Suministro | Tiempo | Sprite |
+|------|-----------|---------|------------|--------|--------|
+| Caza | 75 | 25 | 2 | 20 s | `ship_tier1_dispatcher.png` |
+| Interceptor | 100 | 40 | 2 | 25 s | `ship_tier2_bob.png` |
+| Fragata | 150 | 60 | 3 | 35 s | `ship_tier3_challenger.png` |
+| Crucero | 225 | 90 | 4 | 50 s | `ship_tier4_imperial.png` |
+| Acorazado | 350 | 150 | 6 | 75 s | `ship_tier5_insurgent.png` |
 
 ### Cómo jugar (ruta naves)
 
@@ -82,7 +97,7 @@ Edificios base: Panel solar 100 (+12 Energía/min), Depósito 100 (+8 suministro
 | Puerto estelar | `building_house_open.png` | House_Open |
 | Obreros / infantería | `unit_astronaut_*.png` | Astronaut_* |
 | Rover / Mech | `vehicle_rover_*.png`, `vehicle_mech_*.png` | Rover_*, Mech_* |
-| Naves (stub) | `vehicle_spaceship_*.png` | Spaceship_* |
+| Naves | `ship_tier*_*.png` | Ultimate Spaceships |
 | Props | `prop_rock_*`, `prop_tree_*`, `prop_planet_1` | Environment |
 
 Sprites en `assets/images/` (PNG RGBA). Manifest: `assets/MANIFEST.md`.
@@ -118,7 +133,7 @@ lib/
   ui/hud.dart         # HUD español
 assets/
   images/             # PNG del kit
-  License.txt         # Quaternius CC0
+  License.txt         # Quaternius CC0 (Platformer + Spaceships)
   MANIFEST.md
 ```
 
@@ -128,9 +143,13 @@ assets/
 - v0.2 — kit Quaternius + Cuartel / producción militar
 - v0.2.1 — hotfix carga assets móvil
 - v0.2.2 — Energía (paneles) + reanudar construcción
-- v0.3 — Laboratorio + tech naves + Puerto estelar (este release)
-- v0.3+ — combate real / capas MOBA / sprites Ultimate Spaceships
+- v0.3 — Laboratorio + tech naves + Puerto estelar
+- v0.3.1 — sprites Ultimate Spaceships (este release)
+- v0.3+ — combate real / capas MOBA
 
 ## Créditos / licencia de assets
 
-**Ultimate Platformer Pack** by [Quaternius](https://quaternius.com) — **CC0 1.0 Universal**
+**Ultimate Platformer Pack** y **Ultimate Spaceships** by [Quaternius](https://quaternius.com) — **CC0 1.0 Universal**
+
+Edificios, astronautas, vehículos terrestres y props: Platformer Pack.
+Naves del Puerto estelar (Dispatcher, Bob, Challenger, Imperial, Insurgent): Ultimate Spaceships.

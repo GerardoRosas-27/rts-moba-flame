@@ -1,8 +1,10 @@
 ------------------------------------------------------
 Ultimate Platformer Pack by @Quaternius
+Ultimate Spaceships (May 2021) by @Quaternius
 Consider supporting me on Patreon, even $1 helps me a lot!
 
 https://www.patreon.com/quaternius
+https://quaternius.com
 -------------------------------------------------------
 
 License:
@@ -10,3 +12,6 @@ CC0 1.0 Universal (CC0 1.0)
 Public Domain Dedication
 https://creativecommons.org/publicdomain/zero/1.0/
 
+Buildings, astronauts, rovers, mechs, props: Ultimate Platformer Pack.
+Starport ships (Caza→Acorazado): Ultimate Spaceships (Dispatcher, Bob,
+Challenger, Imperial, Insurgent — blue orthographic renders).
