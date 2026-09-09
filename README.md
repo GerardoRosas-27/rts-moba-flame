@@ -1,44 +1,51 @@
 # RTS Moba Flame
 
-RTS móvil 2D (top-down) con **Flutter + Flame**. UI en **español**. v0.1 = construcción y recolección (sin combate real ni MOBA).
+RTS móvil 2D (top-down / ¾) con **Flutter + Flame**. UI en **español**.
 
 Repo: [GerardoRosas-27/rts-moba-flame](https://github.com/GerardoRosas-27/rts-moba-flame)
 
-## Cómo jugar (v0.1)
+## v0.2 — Kit Quaternius + Cuartel
 
-1. Empiezas con **1 Centro de Mando** y **5 obreros**, **150 minerales**.
-2. **Toca** un obrero (o varios vía grupos) para seleccionarlo.
-3. Toca un **cristal azul** → el obrero recolecta, lleva al CC y **repite** solo.
-4. **CONSTRUIR → Refinería** sobre el géiser verde → luego recolecta **gas**.
-5. Selecciona el **Centro de Mando** → entrena más **Obreros** (cuesta minerales + suministro).
-6. Construye **Depósito** para más suministro; **Puesto avanzado** / **Centro de Mando** para expandir.
-7. **Arrastra** para panear la cámara; **pellizca** o botones +/- para zoom.
-8. Grupos 1–4: **mantener** para asignar, **tocar** para recuperar.
+Tema espacial con sprites del **Ultimate Platformer Pack** de Quaternius (CC0).
+Economía de v0.1 (obreros, minerales, gas, expansión) + **Cuartel** con cola de producción militar.
 
-Comandos: **MOVER** (toca el mapa), **MANTENER**, **CONSTRUIR**. ATACAR / PATRULLA / ESPECIAL son stubs en v0.1.
+### Cómo jugar
 
-## Feel numbers (v0.1)
+1. Empiezas con **1 Centro de Mando** (`Base_Large`) y **5 obreros** (`Astronaut_Rae`), **150 minerales**.
+2. Recolecta minerales (cristales azules). Construye **Refinería** (`SolarPanel_Structure`) sobre el géiser para gas.
+3. Construye **Depósito** (`GeodesicDome`) para suministro y **Cuartel** (`Building_L`) para tropas.
+4. Selecciona el **Cuartel** → produce:
+   - Infantería Finn / Barbara (`Astronaut_*`)
+   - **Rover** (`Rover_1`)
+   - **Mech** (`Mech_FinnTheFrog`)
+5. Pan / zoom / grupos 1–4 como en v0.1. Combate sigue en stub.
 
-Documentados en `lib/game/balance.dart`:
+### Costos de unidades (v0.2)
 
-| Parámetro | Valor |
-|-----------|-------|
-| Minerales iniciales | 150 |
-| Obreros iniciales | 5 |
-| Suministro del CC | 10 |
-| Mapa | 2400 × 1800 px |
-| Zoom cámara | 0.45 – 1.6 (inicio 0.85) |
-| Costo obrero | 50 minerales, 1 suministro, 12 s |
-| Velocidad obrero | 95 px/s |
-| Carga mineral / gas | 8 / 6 |
-| Tiempo de recolección | 1.6 s |
-| Nodo mineral / géiser | 1500 / 2500 |
-| Refinería | 100 minerales, 30 s |
-| Depósito | 100 minerales, +8 suministro, 20 s |
-| Cuartel | 150 minerales, 35 s (stub) |
-| Puesto avanzado | 150 minerales, 40 s (depósito) |
-| CC expansión | 400 minerales, 60 s, +10 suministro |
-| Cola de producción | máx. 6 |
+| Unidad | Minerales | Gas | Suministro | Tiempo |
+|--------|-----------|-----|------------|--------|
+| Obrero (Rae) | 50 | 0 | 1 | 12 s |
+| Infantería Finn | 50 | 0 | 1 | 15 s |
+| Infantería Barbara | 50 | 15 | 1 | 16 s |
+| Rover | 100 | 25 | 2 | 25 s |
+| Mech | 150 | 50 | 3 | 35 s |
+
+Edificios (sin cambio mayor vs v0.1): Refinería 100, Depósito 100 (+8 suministro), Cuartel 150, Puesto 150, CC 400 (+10 suministro).
+
+### Mapeo de assets (Quaternius)
+
+| Rol | Sprite | Modelo |
+|-----|--------|--------|
+| CC | `building_base_large.png` | Base_Large |
+| Refinería / power | `building_solarpanel_structure.png` | SolarPanel_Structure |
+| Depósito | `building_geodesic_dome.png` | GeodesicDome |
+| Cuartel | `building_l.png` | Building_L |
+| Puesto | `building_house_cylinder.png` | House_Cylinder |
+| Obreros / infantería | `unit_astronaut_*.png` | Astronaut_* |
+| Rover / Mech | `vehicle_rover_*.png`, `vehicle_mech_*.png` | Rover_*, Mech_* |
+| Props | `prop_rock_*`, `prop_tree_*`, `prop_planet_1` | Environment |
+
+Sprites en `assets/images/` (PNG RGBA). Manifest: `assets/MANIFEST.md`.
 
 ## Ejecutar
 
@@ -62,21 +69,30 @@ flutter build apk --release
 lib/
   main.dart
   game/
+    assets.dart       # carga sprites Quaternius
     balance.dart      # feel numbers
     enums.dart
-    rts_game.dart     # FlameGame + input + loop
-    components/       # unidades, edificios, recursos, terreno
+    rts_game.dart
+    components/       # unidades, edificios, props, terreno
     systems/          # economía, cola de producción
-  ui/
-    hud.dart          # HUD español (minerales, gas, suministro, cola, comandos)
+  ui/hud.dart         # HUD español
+assets/
+  images/             # PNG del kit
+  License.txt         # Quaternius CC0
+  MANIFEST.md
 ```
 
-## Roadmap breve
+## Roadmap
 
-- v0.1 — construcción + harvesting (este release)
-- v0.2 — combate básico / unidades militares
-- v0.3+ — capas MOBA (héroes, carriles) opcional
+- v0.1 — construcción + harvesting
+- v0.2 — kit Quaternius + Cuartel / producción militar (este release)
+- v0.3+ — combate real / capas MOBA
 
-## Licencia
+## Créditos / licencia de assets
 
-Uso privado / demo del autor salvo que se indique lo contrario.
+**Ultimate Platformer Pack** by [Quaternius](https://quaternius.com) — **CC0 1.0 Universal**
+(Public Domain Dedication). Ver `assets/License.txt`.
+
+Considera apoyar a Quaternius en Patreon: https://www.patreon.com/quaternius
+
+Código del juego: uso privado / demo del autor salvo que se indique lo contrario.

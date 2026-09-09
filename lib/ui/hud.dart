@@ -428,8 +428,14 @@ class _ProductionQueueRow extends StatelessWidget {
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.engineering,
-                                color: _mineralBlue, size: 16),
+                            Text(
+                              items[i].kind.shortEs,
+                              style: const TextStyle(
+                                color: _mineralBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
                             Text(
                               '${items[i].remaining.ceil()}s',
                               style: const TextStyle(
@@ -491,6 +497,37 @@ class _SelectionRow extends StatelessWidget {
                 () => game.trainWorker(),
               ),
             ],
+            if (b.canTrainMilitary) ...[
+              const SizedBox(width: 6),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _actionChip(
+                        'Finn\n${Balance.infantryFrogMineralCost}💎',
+                        () => game.trainUnit(UnitKind.infantryFrog),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Barbara\n${Balance.infantryBeeMineralCost}💎/${Balance.infantryBeeGasCost}☁',
+                        () => game.trainUnit(UnitKind.infantryBee),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Rover\n${Balance.roverMineralCost}💎/${Balance.roverGasCost}☁',
+                        () => game.trainUnit(UnitKind.rover),
+                      ),
+                      const SizedBox(width: 4),
+                      _actionChip(
+                        'Mech\n${Balance.mechMineralCost}💎/${Balance.mechGasCost}☁',
+                        () => game.trainUnit(UnitKind.mech),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       );
@@ -505,10 +542,10 @@ class _SelectionRow extends StatelessWidget {
         itemBuilder: (context, i) {
           final u = units[i];
           return _portrait(
-            label: 'OBR',
+            label: u.kind.shortEs,
             hp: 'HP ${u.hp}/${u.maxHp}',
             progress: u.hp / u.maxHp,
-            subtitle: _jobLabel(u),
+            subtitle: u.isWorker ? _jobLabel(u) : u.kind.labelEs,
           );
         },
       ),
@@ -695,7 +732,7 @@ class _CommandCard extends StatelessWidget {
                 _buildOption(
                   ctx,
                   'Cuartel',
-                  '${Balance.barracksMineralCost} minerales — (stub combate)',
+                  '${Balance.barracksMineralCost} minerales — produce tropas/vehículos',
                   () => game.enterBuildMode(BuildMode.barracks),
                 ),
                 _buildOption(

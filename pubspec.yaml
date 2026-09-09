@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.1: construcción y recolección."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2: kit Quaternius + Cuartel."
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.2
@@ -19,3 +19,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/License.txt
+    - assets/MANIFEST.md

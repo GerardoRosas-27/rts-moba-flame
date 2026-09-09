@@ -15,14 +15,18 @@ class QueueItem {
   double remaining;
   final Building source;
 
-  factory QueueItem.worker(Building source) {
+  factory QueueItem.unit(UnitKind kind, Building source) {
+    final secs = Balance.trainSecondsOf(kind);
     return QueueItem(
-      kind: UnitKind.worker,
-      totalSeconds: Balance.workerTrainSeconds,
+      kind: kind,
+      totalSeconds: secs,
       source: source,
-      remaining: Balance.workerTrainSeconds,
+      remaining: secs,
     );
   }
+
+  factory QueueItem.worker(Building source) =>
+      QueueItem.unit(UnitKind.worker, source);
 }
 
 class ProductionQueue {

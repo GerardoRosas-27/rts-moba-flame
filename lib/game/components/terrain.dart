@@ -14,48 +14,65 @@ class TerrainBackground extends PositionComponent {
         );
 
   final _rng = math.Random(42);
-  late final List<Offset> _rocks;
+  late final List<Offset> _dunes;
   late final List<Offset> _craters;
+  late final List<(Offset, double)> _stars;
 
   @override
   Future<void> onLoad() async {
-    _rocks = List.generate(80, (_) {
+    _dunes = List.generate(36, (_) {
       return Offset(
         _rng.nextDouble() * Balance.mapWidth,
         _rng.nextDouble() * Balance.mapHeight,
       );
     });
-    _craters = List.generate(24, (_) {
+    _craters = List.generate(20, (_) {
       return Offset(
         _rng.nextDouble() * Balance.mapWidth,
         _rng.nextDouble() * Balance.mapHeight,
+      );
+    });
+    _stars = List.generate(60, (_) {
+      return (
+        Offset(
+          _rng.nextDouble() * Balance.mapWidth,
+          _rng.nextDouble() * Balance.mapHeight,
+        ),
+        0.6 + _rng.nextDouble() * 1.4,
       );
     });
   }
 
   @override
   void render(Canvas canvas) {
+    // Space / planetary ochre ground
     canvas.drawRect(
       size.toRect(),
-      Paint()..color = const Color(0xFF3A2418),
+      Paint()..color = const Color(0xFF2A1810),
     );
-    // Subtle grid / dunes
+    canvas.drawRect(
+      size.toRect(),
+      Paint()..color = const Color(0xFF3E2618),
+    );
     final dune = Paint()..color = const Color(0xFF4A3020);
-    for (var y = 0.0; y < size.y; y += 120) {
-      canvas.drawRect(Rect.fromLTWH(0, y, size.x, 40), dune);
+    for (final d in _dunes) {
+      canvas.drawOval(
+        Rect.fromCenter(center: d, width: 180 + (d.dx % 80), height: 50),
+        dune,
+      );
     }
-    final craterPaint = Paint()..color = const Color(0xFF2A1810);
+    final craterPaint = Paint()..color = const Color(0xFF24140C);
     for (final c in _craters) {
       canvas.drawOval(
         Rect.fromCenter(center: c, width: 70, height: 40),
         craterPaint,
       );
     }
-    final rockPaint = Paint()..color = const Color(0xFF5A3A28);
-    for (final r in _rocks) {
-      canvas.drawCircle(r, 6 + (r.dx % 5), rockPaint);
+    // Sparse “stars” / glitter on ground for space vibe
+    final starPaint = Paint()..color = const Color(0x33FFFFFF);
+    for (final (o, r) in _stars) {
+      canvas.drawCircle(o, r, starPaint);
     }
-    // Border
     canvas.drawRect(
       size.toRect().deflate(2),
       Paint()

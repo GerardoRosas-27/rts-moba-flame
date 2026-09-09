@@ -8,7 +8,13 @@ enum BuildingKind {
   outpost,
 }
 
-enum UnitKind { worker }
+enum UnitKind {
+  worker,
+  infantryFrog,
+  infantryBee,
+  rover,
+  mech,
+}
 
 enum CommandAction {
   move,
@@ -68,6 +74,21 @@ extension BuildingKindLabel on BuildingKind {
         return 'PA';
     }
   }
+
+  String get kitName {
+    switch (this) {
+      case BuildingKind.commandCenter:
+        return 'Base_Large';
+      case BuildingKind.refinery:
+        return 'SolarPanel_Structure';
+      case BuildingKind.supplyDepot:
+        return 'GeodesicDome';
+      case BuildingKind.barracks:
+        return 'Building_L';
+      case BuildingKind.outpost:
+        return 'House_Cylinder';
+    }
+  }
 }
 
 extension UnitKindLabel on UnitKind {
@@ -75,6 +96,47 @@ extension UnitKindLabel on UnitKind {
     switch (this) {
       case UnitKind.worker:
         return 'Obrero';
+      case UnitKind.infantryFrog:
+        return 'Infantería Finn';
+      case UnitKind.infantryBee:
+        return 'Infantería Barbara';
+      case UnitKind.rover:
+        return 'Rover';
+      case UnitKind.mech:
+        return 'Mech';
     }
   }
+
+  String get shortEs {
+    switch (this) {
+      case UnitKind.worker:
+        return 'OBR';
+      case UnitKind.infantryFrog:
+        return 'FIN';
+      case UnitKind.infantryBee:
+        return 'BEE';
+      case UnitKind.rover:
+        return 'ROV';
+      case UnitKind.mech:
+        return 'MEC';
+    }
+  }
+
+  String get kitName {
+    switch (this) {
+      case UnitKind.worker:
+        return 'Astronaut_RaeTheRedPanda';
+      case UnitKind.infantryFrog:
+        return 'Astronaut_FinnTheFrog';
+      case UnitKind.infantryBee:
+        return 'Astronaut_BarbaraTheBee';
+      case UnitKind.rover:
+        return 'Rover_1';
+      case UnitKind.mech:
+        return 'Mech_FinnTheFrog';
+    }
+  }
+
+  bool get canHarvest => this == UnitKind.worker;
+  bool get canBuild => this == UnitKind.worker;
 }

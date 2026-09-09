@@ -6,8 +6,10 @@ import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 
+import 'assets.dart';
 import 'balance.dart';
 import 'components/building.dart';
+import 'components/prop.dart';
 import 'components/resource_node.dart';
 import 'components/terrain.dart';
 import 'components/unit.dart';
@@ -26,7 +28,6 @@ class RtsGame extends FlameGame
   final List<GameUnit> selectedUnits = [];
   final List<Building> selectedBuildings = [];
 
-  /// Control groups 1..4
   final Map<int, List<GameUnit>> controlGroups = {1: [], 2: [], 3: [], 4: []};
 
   BuildMode buildMode = BuildMode.none;
@@ -40,16 +41,61 @@ class RtsGame extends FlameGame
   final ValueNotifier<int> hudTick = ValueNotifier(0);
 
   @override
-  Color backgroundColor() => const Color(0xFF1A120C);
+  Color backgroundColor() => const Color(0xFF0B0E14);
 
   @override
   Future<void> onLoad() async {
+    await GameAssets.instance.load();
     camera.viewfinder.anchor = Anchor.center;
     camera.viewfinder.zoom = Balance.cameraStartZoom;
 
     world.add(TerrainBackground());
+    _spawnLandscapeProps();
     _spawnStartingBase();
     _notifyHud();
+  }
+
+  void _spawnLandscapeProps() {
+    final rng = math.Random(7);
+    const rocks = [
+      'images/prop_rock_1.png',
+      'images/prop_rock_2.png',
+      'images/prop_rock_3.png',
+      'images/prop_rock_4.png',
+      'images/prop_rock_large_1.png',
+      'images/prop_rock_large_2.png',
+      'images/prop_rock_large_3.png',
+    ];
+    const trees = [
+      'images/prop_tree_spiral_1.png',
+      'images/prop_tree_swirl_1.png',
+      'images/prop_tree_blob_1.png',
+      'images/prop_tree_lava_1.png',
+      'images/prop_tree_light_1.png',
+      'images/prop_tree_spikes_1.png',
+    ];
+    const scrub = [
+      'images/prop_planet_1.png',
+    ];
+
+    void scatter(List<String> paths, int count, double minSize, double maxSize) {
+      for (var i = 0; i < count; i++) {
+        final path = paths[rng.nextInt(paths.length)];
+        final pos = Vector2(
+          80 + rng.nextDouble() * (Balance.mapWidth - 160),
+          80 + rng.nextDouble() * (Balance.mapHeight - 160),
+        );
+        // Keep clear of starting base / expansion mineral patches
+        if (pos.distanceTo(Vector2(520, 900)) < 220) continue;
+        if (pos.distanceTo(Vector2(1700, 500)) < 180) continue;
+        final sz = minSize + rng.nextDouble() * (maxSize - minSize);
+        world.add(MapProp(assetPath: path, position: pos, sizePx: sz));
+      }
+    }
+
+    scatter(rocks, 48, 28, 72);
+    scatter(trees, 30, 42, 80);
+    scatter(scrub, 6, 56, 96); // planet decor
   }
 
   void _spawnStartingBase() {
@@ -72,7 +118,6 @@ class RtsGame extends FlameGame
     }
     economy.supplyUsed = Balance.startWorkers;
 
-    // Minerals near base
     for (var i = 0; i < Balance.mineralNodesNearBase; i++) {
       final a = -0.6 + i * 0.22;
       final node = ResourceNode(
@@ -85,7 +130,6 @@ class RtsGame extends FlameGame
       resources.add(node);
     }
 
-    // Gas geyser near base
     final geyser = ResourceNode(
       kind: ResourceKind.gas,
       position: basePos + Vector2(140, 90),
@@ -95,7 +139,6 @@ class RtsGame extends FlameGame
     world.add(geyser);
     resources.add(geyser);
 
-    // Expansion minerals + geyser (northeast)
     final exp = Vector2(1700, 500);
     for (var i = 0; i < Balance.mineralNodesExpansion; i++) {
       final a = i * 0.35;
@@ -129,8 +172,6 @@ class RtsGame extends FlameGame
     toastTimer = 2.5;
     _notifyHud();
   }
-
-  // --- Selection ---
 
   void clearSelection() {
     for (final u in selectedUnits) {
@@ -175,15 +216,12 @@ class RtsGame extends FlameGame
       return;
     }
     selectUnits(alive);
-    // Pan camera to group center
     final cx =
         alive.fold<double>(0, (a, u) => a + u.position.x) / alive.length;
     final cy =
         alive.fold<double>(0, (a, u) => a + u.position.y) / alive.length;
     camera.viewfinder.position = Vector2(cx, cy);
   }
-
-  // --- Commands ---
 
   void commandMove(Vector2 worldPos) {
     if (selectedUnits.isEmpty) return;
@@ -203,75 +241,86 @@ class RtsGame extends FlameGame
   }
 
   void commandAttackStub() {
-    showToast('Ataque: no disponible en v0.1');
+    showToast('Ataque: stub en v0.2 — priorizamos producción');
   }
 
   void commandPatrolStub() {
-    showToast('Patrulla: no disponible en v0.1');
+    showToast('Patrulla: stub en v0.2');
   }
 
   void commandSpecialStub() {
-    showToast('Especial: no disponible en v0.1');
+    showToast('Especial: stub en v0.2');
   }
 
   void enterBuildMode(BuildMode mode) {
-    if (selectedUnits.isEmpty) {
+    if (selectedUnits.where((u) => u.isWorker).isEmpty) {
       showToast('Selecciona obreros para construir');
       return;
     }
     buildMode = mode;
     final names = {
-      BuildMode.refinery: 'Refinería (sobre géiser)',
-      BuildMode.supplyDepot: 'Depósito de suministro',
-      BuildMode.barracks: 'Cuartel',
+      BuildMode.refinery: 'Refinería (SolarPanel — sobre géiser)',
+      BuildMode.supplyDepot: 'Depósito (GeodesicDome)',
+      BuildMode.barracks: 'Cuartel (Building_L)',
       BuildMode.outpost: 'Puesto avanzado',
-      BuildMode.commandCenter: 'Centro de mando (expansión)',
+      BuildMode.commandCenter: 'Centro de mando (Base_Large)',
     };
     showToast('Construir: ${names[mode] ?? mode.name}');
     _notifyHud();
   }
 
-  void trainWorker() {
-    final cc = selectedBuildings.cast<Building?>().firstWhere(
-          (b) => b!.canTrainWorkers,
-          orElse: () => buildings.cast<Building?>().firstWhere(
-                (b) => b!.canTrainWorkers,
-                orElse: () => null,
-              ),
-        );
-    if (cc == null) {
-      showToast('Necesitas un Centro de Mando');
+  Building? _findTrainer({required bool Function(Building b) pred}) {
+    for (final b in selectedBuildings) {
+      if (pred(b)) return b;
+    }
+    for (final b in buildings) {
+      if (pred(b)) return b;
+    }
+    return null;
+  }
+
+  void trainUnit(UnitKind kind) {
+    final needsBarracks = kind != UnitKind.worker;
+    final source = needsBarracks
+        ? _findTrainer(pred: (b) => b.canTrainMilitary)
+        : _findTrainer(pred: (b) => b.canTrainWorkers);
+    if (source == null) {
+      showToast(needsBarracks
+          ? 'Necesitas un Cuartel completo'
+          : 'Necesitas un Centro de Mando');
       return;
     }
     if (production.isFull) {
       showToast('Cola llena');
       return;
     }
-    if (!economy.canAfford(
-      mineral: Balance.workerMineralCost,
-      supply: Balance.workerSupplyCost,
-    )) {
-      if (economy.supplyUsed + Balance.workerSupplyCost > economy.supplyMax) {
+    final m = Balance.mineralCostOf(kind);
+    final g = Balance.gasCostOf(kind);
+    final s = Balance.supplyCostOf(kind);
+    if (!economy.canAfford(mineral: m, gasCost: g, supply: s)) {
+      if (economy.supplyUsed + s > economy.supplyMax) {
         showToast('Sin suministro — construye un Depósito');
-      } else {
+      } else if (economy.minerals < m) {
         showToast('Minerales insuficientes');
+      } else {
+        showToast('Gas insuficiente');
       }
       return;
     }
-    economy.spend(
-      mineral: Balance.workerMineralCost,
-      supply: Balance.workerSupplyCost,
-    );
-    production.enqueue(QueueItem.worker(cc));
-    showToast('Entrenando obrero');
+    economy.spend(mineral: m, gasCost: g, supply: s);
+    production.enqueue(QueueItem.unit(kind, source));
+    showToast('Entrenando ${kind.labelEs}');
     _notifyHud();
   }
+
+  void trainWorker() => trainUnit(UnitKind.worker);
 
   void cancelQueueAt(int index) {
     if (index < 0 || index >= production.items.length) return;
     final item = production.items[index];
-    economy.minerals += Balance.workerMineralCost;
-    economy.refundSupply(Balance.workerSupplyCost);
+    economy.minerals += Balance.mineralCostOf(item.kind);
+    economy.gas += Balance.gasCostOf(item.kind);
+    economy.refundSupply(Balance.supplyCostOf(item.kind));
     production.cancelAt(index);
     showToast('Cancelado: ${item.kind.labelEs}');
     _notifyHud();
@@ -293,7 +342,8 @@ class RtsGame extends FlameGame
 
   void _tryPlaceBuilding(Vector2 worldPos) {
     if (buildMode == BuildMode.none) return;
-    final workers = selectedUnits.where((u) => u.kind == UnitKind.worker).toList();
+    final workers =
+        selectedUnits.where((u) => u.kind == UnitKind.worker).toList();
     if (workers.isEmpty) {
       showToast('Selecciona obreros');
       buildMode = BuildMode.none;
@@ -356,7 +406,6 @@ class RtsGame extends FlameGame
       return;
     }
 
-    // Overlap check (simple)
     for (final b in buildings) {
       if (b.position.distanceTo(placeAt) < b.radius + 30) {
         showToast('Espacio ocupado');
@@ -374,19 +423,17 @@ class RtsGame extends FlameGame
     site.buildProgress = 0;
     if (geyser != null) {
       site.geyser = geyser;
-      geyser.hasRefinery = true; // reserve while building
+      geyser.hasRefinery = true;
     }
     world.add(site);
     buildings.add(site);
 
-    // Assign closest workers to build
     workers.sort(
       (a, b) => a.position
           .distanceTo(placeAt)
           .compareTo(b.position.distanceTo(placeAt)),
     );
-    final builders = workers.take(3).toList();
-    for (final w in builders) {
+    for (final w in workers.take(3)) {
       w.orderBuild(site);
     }
 
@@ -413,7 +460,8 @@ class RtsGame extends FlameGame
     switch (b.kind) {
       case BuildingKind.commandCenter:
         economy.addSupplyMax(Balance.ccSupplyProvided);
-        showToast('Centro de Mando listo (+${Balance.ccSupplyProvided} suministro)');
+        showToast(
+            'Centro de Mando listo (+${Balance.ccSupplyProvided} suministro)');
       case BuildingKind.supplyDepot:
         economy.addSupplyMax(Balance.supplyDepotSupply);
         showToast('Depósito listo (+${Balance.supplyDepotSupply} suministro)');
@@ -423,14 +471,12 @@ class RtsGame extends FlameGame
         }
         showToast('Refinería lista — puedes recolectar gas');
       case BuildingKind.barracks:
-        showToast('Cuartel listo (combate en versiones futuras)');
+        showToast('Cuartel listo — produce infantería, rover y mech');
       case BuildingKind.outpost:
         showToast('Puesto avanzado listo — punto de depósito');
     }
     _notifyHud();
   }
-
-  // --- Input ---
 
   Vector2 _screenToWorld(Vector2 screen) {
     return camera.globalToLocal(screen);
@@ -445,7 +491,6 @@ class RtsGame extends FlameGame
       return;
     }
 
-    // Hit-test units first (smaller)
     GameUnit? hitUnit;
     var bestU = 28.0;
     for (final u in units) {
@@ -461,7 +506,7 @@ class RtsGame extends FlameGame
     }
 
     Building? hitBuilding;
-    var bestB = 60.0;
+    var bestB = 70.0;
     for (final b in buildings) {
       final d = b.position.distanceTo(worldPos);
       if (d < b.radius + 8 && d < bestB) {
@@ -474,7 +519,6 @@ class RtsGame extends FlameGame
       return;
     }
 
-    // Resource node — if workers selected, harvest
     ResourceNode? hitNode;
     var bestN = 40.0;
     for (final r in resources) {
@@ -484,13 +528,13 @@ class RtsGame extends FlameGame
         hitNode = r;
       }
     }
-    if (hitNode != null && selectedUnits.isNotEmpty) {
+    if (hitNode != null && selectedUnits.any((u) => u.isWorker)) {
       if (hitNode.kind == ResourceKind.gas && !hitNode.hasRefinery) {
         showToast('Construye una Refinería sobre el géiser');
         return;
       }
       for (final u in selectedUnits) {
-        u.orderHarvest(hitNode);
+        if (u.isWorker) u.orderHarvest(hitNode);
       }
       showToast(
         hitNode.kind == ResourceKind.mineral
@@ -501,7 +545,6 @@ class RtsGame extends FlameGame
       return;
     }
 
-    // Empty ground — move if units selected
     if (selectedUnits.isNotEmpty) {
       commandMove(worldPos);
       return;
@@ -551,7 +594,6 @@ class RtsGame extends FlameGame
       final zoom = (camera.viewfinder.zoom * info.scale.global.y)
           .clamp(Balance.cameraMinZoom, Balance.cameraMaxZoom);
       camera.viewfinder.zoom = zoom;
-      // Pan with focal delta
       final delta = info.delta.global / camera.viewfinder.zoom;
       camera.viewfinder.position -= delta;
       _clampCamera();
@@ -575,8 +617,6 @@ class RtsGame extends FlameGame
         .clamp(Balance.cameraMinZoom, Balance.cameraMaxZoom);
     _notifyHud();
   }
-
-  // --- Update ---
 
   @override
   void update(double dt) {
@@ -615,7 +655,6 @@ class RtsGame extends FlameGame
       _notifyHud();
     }
 
-    // Periodic HUD refresh for timer / rates
     if ((missionTime * 10).floor() % 5 == 0) {
       _notifyHud();
     }

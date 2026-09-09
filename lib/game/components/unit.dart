@@ -2,8 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:flutter/painting.dart';
 
+import '../assets.dart';
 import '../balance.dart';
 import '../enums.dart';
 import 'building.dart';
@@ -15,13 +15,16 @@ class GameUnit extends PositionComponent {
     required Vector2 position,
   }) : super(
           position: position,
-          size: Vector2.all(Balance.workerRadius * 2),
+          size: Vector2.all(Balance.radiusOf(kind) * 2),
           anchor: Anchor.center,
-        );
+        ) {
+    hp = Balance.maxHpOf(kind);
+    maxHp = Balance.maxHpOf(kind);
+  }
 
   final UnitKind kind;
-  int hp = Balance.workerMaxHp;
-  int maxHp = Balance.workerMaxHp;
+  late int hp;
+  late int maxHp;
   bool selected = false;
   WorkerJob job = WorkerJob.idle;
 
@@ -35,8 +38,9 @@ class GameUnit extends PositionComponent {
   bool holdPosition = false;
 
   double get radius => size.x / 2;
-  double get speed => Balance.workerSpeed;
+  double get speed => Balance.speedOf(kind);
   bool get isCarrying => carryingAmount > 0;
+  bool get isWorker => kind.canHarvest;
 
   void orderMove(Vector2 worldPos) {
     holdPosition = false;
@@ -45,7 +49,6 @@ class GameUnit extends PositionComponent {
     depositTarget = null;
     buildTarget = null;
     job = WorkerJob.moving;
-    // Keep cargo if any — player can re-route.
   }
 
   void orderHold() {
@@ -58,6 +61,7 @@ class GameUnit extends PositionComponent {
   }
 
   void orderHarvest(ResourceNode node) {
+    if (!isWorker) return;
     holdPosition = false;
     harvestTarget = node;
     buildTarget = null;
@@ -66,6 +70,7 @@ class GameUnit extends PositionComponent {
   }
 
   void orderBuild(Building site) {
+    if (!isWorker) return;
     holdPosition = false;
     buildTarget = site;
     harvestTarget = null;
@@ -84,15 +89,19 @@ class GameUnit extends PositionComponent {
         ..strokeWidth = 1.5;
       canvas.drawCircle(c, radius + 5, dash);
     }
-    final body = Paint()..color = const Color(0xFF4A5568);
-    final armor = Paint()..color = const Color(0xFF00AEEF);
-    canvas.drawCircle(c, radius, body);
-    canvas.drawCircle(c, radius * 0.55, armor);
-    canvas.drawCircle(
-      c.translate(0, -2),
-      3,
-      Paint()..color = const Color(0xFFE2E8F0),
-    );
+
+    final sprite = GameAssets.instance.forUnit(kind);
+    if (sprite != null) {
+      final dest = Rect.fromCenter(
+        center: c,
+        width: size.x * 1.15,
+        height: size.y * 1.15,
+      );
+      sprite.renderRect(canvas, dest);
+    } else {
+      canvas.drawCircle(c, radius, Paint()..color = const Color(0xFF4A5568));
+    }
+
     if (isCarrying) {
       final cargoColor = carryingKind == ResourceKind.gas
           ? const Color(0xFF39FF14)
@@ -103,7 +112,7 @@ class GameUnit extends PositionComponent {
         Paint()..color = cargoColor,
       );
     }
-    // HP bar
+
     final barW = size.x;
     const barH = 3.0;
     canvas.drawRect(
@@ -116,7 +125,6 @@ class GameUnit extends PositionComponent {
     );
   }
 
-  /// Returns true if arrived.
   bool _stepToward(Vector2 target, double dt) {
     final delta = target - position;
     final dist = delta.length;
@@ -137,7 +145,7 @@ class GameUnit extends PositionComponent {
   }) {
     if (holdPosition && job == WorkerJob.holding) return;
 
-    if (buildTarget != null) {
+    if (buildTarget != null && isWorker) {
       final site = buildTarget!;
       if (site.isComplete || site.parent == null) {
         buildTarget = null;
@@ -162,7 +170,7 @@ class GameUnit extends PositionComponent {
       return;
     }
 
-    if (harvestTarget != null || isCarrying) {
+    if (isWorker && (harvestTarget != null || isCarrying)) {
       _tickHarvest(dt, findDeposit, onDeposit);
       return;
     }
@@ -203,7 +211,6 @@ class GameUnit extends PositionComponent {
       carryingAmount = 0;
       carryingKind = null;
       depositTarget = null;
-      // Auto-loop
       if (harvestTarget != null && !harvestTarget!.depleted) {
         moveTarget = harvestTarget!.position.clone();
         job = WorkerJob.moving;
@@ -220,7 +227,6 @@ class GameUnit extends PositionComponent {
       job = WorkerJob.idle;
       return;
     }
-    // Gas requires refinery
     if (node.kind == ResourceKind.gas && !node.hasRefinery) {
       harvestTarget = null;
       job = WorkerJob.idle;
