@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2: kit Quaternius + Cuartel."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.2.1: hotfix carga assets móvil + splash."
 publish_to: 'none'
-version: 0.2.0+2
+version: 0.2.1+3
 
 environment:
   sdk: ^3.13.2

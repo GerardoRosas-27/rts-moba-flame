@@ -4,6 +4,13 @@ RTS móvil 2D (top-down / ¾) con **Flutter + Flame**. UI en **español**.
 
 Repo: [GerardoRosas-27/rts-moba-flame](https://github.com/GerardoRosas-27/rts-moba-flame)
 
+## v0.2.1 — Hotfix pantalla gris (móvil)
+
+- Rutas Flame corregidas: claves sin prefijo `images/` (prefix ya es `assets/images/`)
+- Splash con barra de progreso «Cargando…» + pantalla de error con Reintentar
+- HUD solo tras `onLoad` completo
+- Sprites reducidos (~192–256px) y menos props de paisaje
+
 ## v0.2 — Kit Quaternius + Cuartel
 
 Tema espacial con sprites del **Ultimate Platformer Pack** de Quaternius (CC0).

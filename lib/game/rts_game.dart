@@ -52,30 +52,31 @@ class RtsGame extends FlameGame
     world.add(TerrainBackground());
     _spawnLandscapeProps();
     _spawnStartingBase();
+    overlays.add('hud');
     _notifyHud();
   }
 
   void _spawnLandscapeProps() {
     final rng = math.Random(7);
     const rocks = [
-      'images/prop_rock_1.png',
-      'images/prop_rock_2.png',
-      'images/prop_rock_3.png',
-      'images/prop_rock_4.png',
-      'images/prop_rock_large_1.png',
-      'images/prop_rock_large_2.png',
-      'images/prop_rock_large_3.png',
+      'prop_rock_1.png',
+      'prop_rock_2.png',
+      'prop_rock_3.png',
+      'prop_rock_4.png',
+      'prop_rock_large_1.png',
+      'prop_rock_large_2.png',
+      'prop_rock_large_3.png',
     ];
     const trees = [
-      'images/prop_tree_spiral_1.png',
-      'images/prop_tree_swirl_1.png',
-      'images/prop_tree_blob_1.png',
-      'images/prop_tree_lava_1.png',
-      'images/prop_tree_light_1.png',
-      'images/prop_tree_spikes_1.png',
+      'prop_tree_spiral_1.png',
+      'prop_tree_swirl_1.png',
+      'prop_tree_blob_1.png',
+      'prop_tree_lava_1.png',
+      'prop_tree_light_1.png',
+      'prop_tree_spikes_1.png',
     ];
     const scrub = [
-      'images/prop_planet_1.png',
+      'prop_planet_1.png',
     ];
 
     void scatter(List<String> paths, int count, double minSize, double maxSize) {
@@ -93,9 +94,9 @@ class RtsGame extends FlameGame
       }
     }
 
-    scatter(rocks, 48, 28, 72);
-    scatter(trees, 30, 42, 80);
-    scatter(scrub, 6, 56, 96); // planet decor
+    scatter(rocks, 24, 28, 72);
+    scatter(trees, 16, 42, 80);
+    scatter(scrub, 4, 56, 96); // planet decor
   }
 
   void _spawnStartingBase() {
