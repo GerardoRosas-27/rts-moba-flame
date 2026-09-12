@@ -1,6 +1,6 @@
 import 'enums.dart';
 
-/// Feel numbers for v0.3.0 — Laboratorio + tech naves + Puerto estelar.
+/// Feel numbers for v0.4.0 — Asedio PvE + Sciences tree.
 class Balance {
   // --- Start ---
   static const int startMinerals = 150;
@@ -8,12 +8,27 @@ class Balance {
   static const int startWorkers = 5;
   static const int commandCenterSupply = 10;
 
-  // --- Map ---
+  // --- Map (city) ---
   static const double mapWidth = 2400;
   static const double mapHeight = 1800;
   static const double cameraMinZoom = 0.45;
   static const double cameraMaxZoom = 1.6;
   static const double cameraStartZoom = 0.85;
+
+  // --- Battle map ---
+  static const double battleMapWidth = 1100;
+  static const double battleMapHeight = 1600;
+  static const double battleCameraZoom = 0.72;
+  static const double battleDurationSeconds = 180; // 3 min
+  static const double battleGateHp = 1200;
+  static const double battleGateWidth = 220;
+  static const double battleGateHeight = 70;
+  static const int battleEnemyWaveSize = 4;
+  static const double battleEnemyWaveSeconds = 22;
+  static const int battleMaxEnemyAlive = 14;
+  static const double battlePlayerSpawnY = 1380;
+  static const double battleGateY = 280;
+  static const double battleRetreatY = 1480;
 
   // --- Worker ---
   static const int workerMineralCost = 50;
@@ -28,7 +43,7 @@ class Balance {
   static const double harvestDepositRange = 48;
   static const double harvestNodeRange = 36;
 
-  // --- Infantry ---
+  // --- Infantry (Soldados / Arqueros) ---
   static const int infantryFrogMineralCost = 50;
   static const int infantryFrogEnergyCost = 0;
   static const int infantryFrogSupplyCost = 1;
@@ -36,6 +51,9 @@ class Balance {
   static const double infantryFrogSpeed = 105;
   static const double infantryFrogRadius = 14;
   static const int infantryFrogMaxHp = 60;
+  static const int infantryFrogDamage = 8;
+  static const double infantryFrogAttackRange = 48;
+  static const double infantryFrogAttackCooldown = 0.85;
 
   static const int infantryBeeMineralCost = 50;
   static const int infantryBeeEnergyCost = 15;
@@ -44,6 +62,9 @@ class Balance {
   static const double infantryBeeSpeed = 110;
   static const double infantryBeeRadius = 14;
   static const int infantryBeeMaxHp = 55;
+  static const int infantryBeeDamage = 10;
+  static const double infantryBeeAttackRange = 110;
+  static const double infantryBeeAttackCooldown = 1.0;
 
   // --- Rover ---
   static const int roverMineralCost = 100;
@@ -53,6 +74,9 @@ class Balance {
   static const double roverSpeed = 120;
   static const double roverRadius = 20;
   static const int roverMaxHp = 120;
+  static const int roverDamage = 16;
+  static const double roverAttackRange = 70;
+  static const double roverAttackCooldown = 1.1;
 
   // --- Mech ---
   static const int mechMineralCost = 150;
@@ -62,6 +86,9 @@ class Balance {
   static const double mechSpeed = 70;
   static const double mechRadius = 26;
   static const int mechMaxHp = 220;
+  static const int mechDamage = 28;
+  static const double mechAttackRange = 80;
+  static const double mechAttackCooldown = 1.4;
 
   // --- Ships (tier 1→5) ---
   static const int shipCazaMineralCost = 75;
@@ -71,6 +98,9 @@ class Balance {
   static const double shipCazaSpeed = 140;
   static const double shipCazaRadius = 16;
   static const int shipCazaMaxHp = 80;
+  static const int shipCazaDamage = 14;
+  static const double shipCazaAttackRange = 100;
+  static const double shipCazaAttackCooldown = 0.9;
 
   static const int shipInterceptorMineralCost = 100;
   static const int shipInterceptorEnergyCost = 40;
@@ -104,7 +134,27 @@ class Balance {
   static const double shipAcorazadoRadius = 36;
   static const int shipAcorazadoMaxHp = 450;
 
-  // --- Tech ---
+  // --- Enemy (battle) ---
+  static const int enemyHp = 45;
+  static const int enemyDamage = 7;
+  static const double enemySpeed = 78;
+  static const double enemyRadius = 13;
+  static const double enemyAttackRange = 42;
+  static const double enemyAttackCooldown = 1.0;
+
+  // --- Tech (Sciences) ---
+  static const int techArchersMineralCost = 75;
+  static const int techArchersEnergyCost = 25;
+  static const double techArchersSeconds = 40;
+
+  static const int techVehiclesMineralCost = 100;
+  static const int techVehiclesEnergyCost = 50;
+  static const double techVehiclesSeconds = 50;
+
+  static const int techMechsMineralCost = 125;
+  static const int techMechsEnergyCost = 75;
+  static const double techMechsSeconds = 55;
+
   static const int techShipConstructionMineralCost = 150;
   static const int techShipConstructionEnergyCost = 100;
   static const double techShipConstructionSeconds = 60;
@@ -344,8 +394,89 @@ class Balance {
     }
   }
 
+  static int damageOf(UnitKind kind) {
+    switch (kind) {
+      case UnitKind.worker:
+        return 0;
+      case UnitKind.infantryFrog:
+        return infantryFrogDamage;
+      case UnitKind.infantryBee:
+        return infantryBeeDamage;
+      case UnitKind.rover:
+        return roverDamage;
+      case UnitKind.mech:
+        return mechDamage;
+      case UnitKind.shipCaza:
+        return shipCazaDamage;
+      case UnitKind.shipInterceptor:
+        return 16;
+      case UnitKind.shipFragata:
+        return 22;
+      case UnitKind.shipCrucero:
+        return 30;
+      case UnitKind.shipAcorazado:
+        return 40;
+    }
+  }
+
+  static double attackRangeOf(UnitKind kind) {
+    switch (kind) {
+      case UnitKind.worker:
+        return 0;
+      case UnitKind.infantryFrog:
+        return infantryFrogAttackRange;
+      case UnitKind.infantryBee:
+        return infantryBeeAttackRange;
+      case UnitKind.rover:
+        return roverAttackRange;
+      case UnitKind.mech:
+        return mechAttackRange;
+      case UnitKind.shipCaza:
+        return shipCazaAttackRange;
+      case UnitKind.shipInterceptor:
+        return 110;
+      case UnitKind.shipFragata:
+        return 120;
+      case UnitKind.shipCrucero:
+        return 140;
+      case UnitKind.shipAcorazado:
+        return 160;
+    }
+  }
+
+  static double attackCooldownOf(UnitKind kind) {
+    switch (kind) {
+      case UnitKind.worker:
+        return 1;
+      case UnitKind.infantryFrog:
+        return infantryFrogAttackCooldown;
+      case UnitKind.infantryBee:
+        return infantryBeeAttackCooldown;
+      case UnitKind.rover:
+        return roverAttackCooldown;
+      case UnitKind.mech:
+        return mechAttackCooldown;
+      case UnitKind.shipCaza:
+        return shipCazaAttackCooldown;
+      case UnitKind.shipInterceptor:
+        return 0.85;
+      case UnitKind.shipFragata:
+        return 1.1;
+      case UnitKind.shipCrucero:
+        return 1.3;
+      case UnitKind.shipAcorazado:
+        return 1.6;
+    }
+  }
+
   static int techMineralCostOf(TechKind kind) {
     switch (kind) {
+      case TechKind.combatArchers:
+        return techArchersMineralCost;
+      case TechKind.combatVehicles:
+        return techVehiclesMineralCost;
+      case TechKind.combatMechs:
+        return techMechsMineralCost;
       case TechKind.shipConstruction:
         return techShipConstructionMineralCost;
     }
@@ -353,6 +484,12 @@ class Balance {
 
   static int techEnergyCostOf(TechKind kind) {
     switch (kind) {
+      case TechKind.combatArchers:
+        return techArchersEnergyCost;
+      case TechKind.combatVehicles:
+        return techVehiclesEnergyCost;
+      case TechKind.combatMechs:
+        return techMechsEnergyCost;
       case TechKind.shipConstruction:
         return techShipConstructionEnergyCost;
     }
@@ -360,8 +497,35 @@ class Balance {
 
   static double researchSecondsOf(TechKind kind) {
     switch (kind) {
+      case TechKind.combatArchers:
+        return techArchersSeconds;
+      case TechKind.combatVehicles:
+        return techVehiclesSeconds;
+      case TechKind.combatMechs:
+        return techMechsSeconds;
       case TechKind.shipConstruction:
         return techShipConstructionSeconds;
+    }
+  }
+
+  /// Tech required to train this unit in the city (null = always).
+  static TechKind? techRequiredForUnit(UnitKind kind) {
+    switch (kind) {
+      case UnitKind.worker:
+      case UnitKind.infantryFrog:
+        return null;
+      case UnitKind.infantryBee:
+        return TechKind.combatArchers;
+      case UnitKind.rover:
+        return TechKind.combatVehicles;
+      case UnitKind.mech:
+        return TechKind.combatMechs;
+      case UnitKind.shipCaza:
+      case UnitKind.shipInterceptor:
+      case UnitKind.shipFragata:
+      case UnitKind.shipCrucero:
+      case UnitKind.shipAcorazado:
+        return TechKind.shipConstruction;
     }
   }
 }

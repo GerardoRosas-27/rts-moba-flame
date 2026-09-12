@@ -26,7 +26,7 @@ class ResearchItem {
   }
 }
 
-/// Cola de investigación global (un laboratorio a la vez en v0.3).
+/// Cola de investigación global (un laboratorio a la vez).
 class ResearchQueue {
   final List<ResearchItem> items = [];
   final Set<TechKind> unlocked = {};
@@ -40,11 +40,37 @@ class ResearchQueue {
   bool get shipConstructionUnlocked =>
       isUnlocked(TechKind.shipConstruction);
 
+  bool get archersUnlocked => isUnlocked(TechKind.combatArchers);
+  bool get vehiclesUnlocked => isUnlocked(TechKind.combatVehicles);
+  bool get mechsUnlocked => isUnlocked(TechKind.combatMechs);
+
+  bool isGroupUnlocked(BattleGroupKind group) {
+    final tech = group.requiredTech;
+    if (tech == null) return true;
+    return isUnlocked(tech);
+  }
+
+  bool canResearch(TechKind kind) {
+    if (isUnlocked(kind)) return false;
+    if (items.any((e) => e.kind == kind)) return false;
+    final pre = kind.prerequisite;
+    if (pre != null && !isUnlocked(pre)) return false;
+    return true;
+  }
+
+  String? blockedReason(TechKind kind) {
+    if (isUnlocked(kind)) return 'Ya investigado';
+    final pre = kind.prerequisite;
+    if (pre != null && !isUnlocked(pre)) {
+      return 'Requiere «${pre.labelEs}» primero';
+    }
+    if (isBusy) return 'Investigación en curso';
+    return null;
+  }
+
   bool enqueue(ResearchItem item) {
     if (isBusy) return false;
-    if (unlocked.contains(item.kind)) return false;
-    // No duplicar la misma tech en cola.
-    if (items.any((e) => e.kind == item.kind)) return false;
+    if (!canResearch(item.kind)) return false;
     items.add(item);
     return true;
   }
@@ -64,4 +90,7 @@ class ResearchQueue {
     }
     return done;
   }
+
+  /// Snapshot for battle (tech unlocks only).
+  Set<TechKind> snapshotUnlocked() => Set.of(unlocked);
 }

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'game/assets.dart';
+import 'game/battle/battle_game.dart';
+import 'game/enums.dart';
 import 'game/rts_game.dart';
+import 'ui/battle_hud.dart';
 import 'ui/hud.dart';
 
 void main() {
@@ -35,6 +38,8 @@ class RtsApp extends StatelessWidget {
   }
 }
 
+enum _Scene { city, battle }
+
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -43,8 +48,12 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late RtsGame _game;
+  late RtsGame _city;
+  BattleGame? _battle;
+  _Scene _scene = _Scene.city;
   int _session = 0;
+
+  Map<UnitKind, int> _deployed = {};
 
   @override
   void initState() {
@@ -54,7 +63,10 @@ class _GameScreenState extends State<GameScreen> {
 
   void _startNewGame() {
     GameAssets.instance.resetProgress();
-    _game = RtsGame();
+    _city = RtsGame(onRequestBattle: _enterBattle);
+    _battle = null;
+    _scene = _Scene.city;
+    _deployed = {};
     _session++;
   }
 
@@ -62,22 +74,87 @@ class _GameScreenState extends State<GameScreen> {
     setState(_startNewGame);
   }
 
+  void _enterBattle() {
+    if (_scene == _Scene.battle) return;
+    final prep = _city.prepareBattleDetachment();
+    if (prep == null) return;
+    _deployed = Map.of(prep.counts);
+    final battle = BattleGame(
+      detachment: prep,
+      onFinished: _onBattleFinished,
+    );
+    setState(() {
+      _battle = battle;
+      _scene = _Scene.battle;
+    });
+  }
+
+  void _onBattleFinished(BattleResult result) {
+    if (!mounted) return;
+    _city.applyBattleResult(
+      deployed: _deployed,
+      survivors: result.survivors,
+      outcome: result.outcome,
+    );
+    _deployed = {};
+    setState(() {
+      _battle = null;
+      _scene = _Scene.city;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E14),
-      body: GameWidget<RtsGame>(
-        key: ValueKey(_session),
-        game: _game,
-        overlayBuilderMap: {
-          'hud': (context, game) => RtsHud(game: game),
-        },
-        // HUD se activa en RtsGame.onLoad tras cargar assets (no desde frame 0).
-        loadingBuilder: (context) => const _LoadingSplash(),
-        errorBuilder: (context, error) => _LoadErrorScreen(
-          error: error,
-          onRetry: _retry,
-        ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Offstage(
+            offstage: _scene != _Scene.city,
+            child: TickerMode(
+              enabled: _scene == _Scene.city,
+              child: GameWidget<RtsGame>(
+                key: ValueKey(_session),
+                game: _city,
+                overlayBuilderMap: {
+                  'hud': (context, game) => RtsHud(game: game),
+                },
+                loadingBuilder: (context) => const _LoadingSplash(),
+                errorBuilder: (context, error) => _LoadErrorScreen(
+                  error: error,
+                  onRetry: _retry,
+                ),
+              ),
+            ),
+          ),
+          if (_scene == _Scene.battle && _battle != null)
+            BattleDragLayer(
+              game: _battle!,
+              child: GameWidget<BattleGame>(
+                game: _battle!,
+                overlayBuilderMap: {
+                  'battleHud': (context, game) => BattleHud(game: game),
+                },
+                loadingBuilder: (context) => const ColoredBox(
+                  color: Color(0xFF120E18),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00AEEF)),
+                  ),
+                ),
+                errorBuilder: (context, error) => _LoadErrorScreen(
+                  error: error,
+                  onRetry: () {
+                    setState(() {
+                      _battle = null;
+                      _scene = _Scene.city;
+                    });
+                    _city.showToast('Error en batalla — de vuelta a la base');
+                  },
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -23,7 +23,12 @@ enum UnitKind {
   shipAcorazado,
 }
 
+/// Sciences tree (Asedio progression). Order: Soldados (start) → Arqueros →
+/// Vehículos → Mechs → Naves (shipConstruction + Starport).
 enum TechKind {
+  combatArchers,
+  combatVehicles,
+  combatMechs,
   shipConstruction,
 }
 
@@ -55,6 +60,29 @@ enum WorkerJob {
   depositing,
   building,
   holding,
+}
+
+/// Up to 5 battle group types unlocked by research.
+enum BattleGroupKind {
+  soldados,
+  arqueros,
+  vehiculos,
+  mechs,
+  naves,
+}
+
+enum BattleCommand {
+  cargar,
+  mantener,
+  retirar,
+  fuegoConcentrado,
+}
+
+enum BattleOutcome {
+  ongoing,
+  victory,
+  defeat,
+  retreat,
 }
 
 extension BuildingKindLabel on BuildingKind {
@@ -122,9 +150,9 @@ extension UnitKindLabel on UnitKind {
       case UnitKind.worker:
         return 'Obrero';
       case UnitKind.infantryFrog:
-        return 'Infantería Finn';
+        return 'Soldado';
       case UnitKind.infantryBee:
-        return 'Infantería Barbara';
+        return 'Arquero';
       case UnitKind.rover:
         return 'Rover';
       case UnitKind.mech:
@@ -147,9 +175,9 @@ extension UnitKindLabel on UnitKind {
       case UnitKind.worker:
         return 'OBR';
       case UnitKind.infantryFrog:
-        return 'FIN';
+        return 'SOL';
       case UnitKind.infantryBee:
-        return 'BEE';
+        return 'ARQ';
       case UnitKind.rover:
         return 'ROV';
       case UnitKind.mech:
@@ -200,11 +228,18 @@ extension UnitKindLabel on UnitKind {
       this == UnitKind.shipFragata ||
       this == UnitKind.shipCrucero ||
       this == UnitKind.shipAcorazado;
+  bool get isMilitary => this != UnitKind.worker;
 }
 
 extension TechKindLabel on TechKind {
   String get labelEs {
     switch (this) {
+      case TechKind.combatArchers:
+        return 'Arqueros / choque';
+      case TechKind.combatVehicles:
+        return 'Vehículos terrestres';
+      case TechKind.combatMechs:
+        return 'Mechs de asedio';
       case TechKind.shipConstruction:
         return 'Construcción de naves';
     }
@@ -212,8 +247,118 @@ extension TechKindLabel on TechKind {
 
   String get shortEs {
     switch (this) {
+      case TechKind.combatArchers:
+        return 'ARQ';
+      case TechKind.combatVehicles:
+        return 'VEH';
+      case TechKind.combatMechs:
+        return 'MEC';
       case TechKind.shipConstruction:
         return 'NAV';
+    }
+  }
+
+  String get descEs {
+    switch (this) {
+      case TechKind.combatArchers:
+        return 'Desbloquea grupo Arqueros en batalla y Cuartel';
+      case TechKind.combatVehicles:
+        return 'Desbloquea grupo Rovers en batalla y Cuartel';
+      case TechKind.combatMechs:
+        return 'Desbloquea grupo Mechs en batalla y Cuartel';
+      case TechKind.shipConstruction:
+        return 'Desbloquea Puerto estelar y grupo Naves en batalla';
+    }
+  }
+
+  /// Soft chain for Sciences UI order.
+  TechKind? get prerequisite {
+    switch (this) {
+      case TechKind.combatArchers:
+        return null;
+      case TechKind.combatVehicles:
+        return TechKind.combatArchers;
+      case TechKind.combatMechs:
+        return TechKind.combatVehicles;
+      case TechKind.shipConstruction:
+        return TechKind.combatMechs;
+    }
+  }
+}
+
+extension BattleGroupKindLabel on BattleGroupKind {
+  String get labelEs {
+    switch (this) {
+      case BattleGroupKind.soldados:
+        return 'Soldados';
+      case BattleGroupKind.arqueros:
+        return 'Arqueros';
+      case BattleGroupKind.vehiculos:
+        return 'Rovers';
+      case BattleGroupKind.mechs:
+        return 'Mechs';
+      case BattleGroupKind.naves:
+        return 'Naves';
+    }
+  }
+
+  String get shortEs {
+    switch (this) {
+      case BattleGroupKind.soldados:
+        return 'SOL';
+      case BattleGroupKind.arqueros:
+        return 'ARQ';
+      case BattleGroupKind.vehiculos:
+        return 'ROV';
+      case BattleGroupKind.mechs:
+        return 'MEC';
+      case BattleGroupKind.naves:
+        return 'NAV';
+    }
+  }
+
+  UnitKind get unitKind {
+    switch (this) {
+      case BattleGroupKind.soldados:
+        return UnitKind.infantryFrog;
+      case BattleGroupKind.arqueros:
+        return UnitKind.infantryBee;
+      case BattleGroupKind.vehiculos:
+        return UnitKind.rover;
+      case BattleGroupKind.mechs:
+        return UnitKind.mech;
+      case BattleGroupKind.naves:
+        return UnitKind.shipCaza;
+    }
+  }
+
+  TechKind? get requiredTech {
+    switch (this) {
+      case BattleGroupKind.soldados:
+        return null;
+      case BattleGroupKind.arqueros:
+        return TechKind.combatArchers;
+      case BattleGroupKind.vehiculos:
+        return TechKind.combatVehicles;
+      case BattleGroupKind.mechs:
+        return TechKind.combatMechs;
+      case BattleGroupKind.naves:
+        return TechKind.shipConstruction;
+    }
+  }
+}
+
+extension BattleCommandLabel on BattleCommand {
+  String get labelEs {
+    switch (this) {
+      case BattleCommand.cargar:
+        return 'Cargar';
+      case BattleCommand.mantener:
+        return 'Mantener';
+      case BattleCommand.retirar:
+        return 'Retirar';
+      case BattleCommand.fuegoConcentrado:
+        return 'Fuego concentrado';
     }
   }
 }

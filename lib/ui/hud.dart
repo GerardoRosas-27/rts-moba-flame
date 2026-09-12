@@ -125,6 +125,32 @@ class _TopBar extends StatelessWidget {
             rate: e.supplyUsed >= e.supplyMax ? 'LLENO' : 'OK',
           ),
           const Spacer(),
+          GestureDetector(
+            onTap: () => game.requestBattle(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A1520),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFF5252)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.sports_mma, color: Color(0xFFFF5252), size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    'BATALLA',
+                    style: TextStyle(
+                      color: Color(0xFFFF5252),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           Row(
             children: [
               const Icon(Icons.timer, color: Colors.white70, size: 16),
@@ -415,20 +441,20 @@ class _ProductionQueueRow extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            if (game.research.shipConstructionUnlocked)
-              const Text(
-                'TECH NAVES ✓',
-                style: TextStyle(
-                  color: _energyGreen,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            else if (game.research.isBusy && game.research.items.isNotEmpty)
+            if (game.research.isBusy && game.research.items.isNotEmpty)
               Text(
                 'INV ${game.research.items.first.kind.shortEs} ${game.research.items.first.remaining.ceil()}s',
                 style: const TextStyle(
                   color: Color(0xFFB388FF),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else
+              Text(
+                'TECH ${game.research.unlocked.length}/4',
+                style: const TextStyle(
+                  color: _energyGreen,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                 ),
@@ -547,22 +573,28 @@ class _SelectionRow extends StatelessWidget {
                   child: Row(
                     children: [
                       _actionChip(
-                        'Finn\n${Balance.infantryFrogMineralCost}💎',
+                        'Soldado\n${Balance.infantryFrogMineralCost}💎',
                         () => game.trainUnit(UnitKind.infantryFrog),
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Barbara\n${Balance.infantryBeeMineralCost}💎/${Balance.infantryBeeEnergyCost}☀',
+                        game.research.archersUnlocked
+                            ? 'Arquero\n${Balance.infantryBeeMineralCost}💎/${Balance.infantryBeeEnergyCost}☀'
+                            : 'Arquero\n🔒',
                         () => game.trainUnit(UnitKind.infantryBee),
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Rover\n${Balance.roverMineralCost}💎/${Balance.roverEnergyCost}☀',
+                        game.research.vehiclesUnlocked
+                            ? 'Rover\n${Balance.roverMineralCost}💎/${Balance.roverEnergyCost}☀'
+                            : 'Rover\n🔒',
                         () => game.trainUnit(UnitKind.rover),
                       ),
                       const SizedBox(width: 4),
                       _actionChip(
-                        'Mech\n${Balance.mechMineralCost}💎/${Balance.mechEnergyCost}☀',
+                        game.research.mechsUnlocked
+                            ? 'Mech\n${Balance.mechMineralCost}💎/${Balance.mechEnergyCost}☀'
+                            : 'Mech\n🔒',
                         () => game.trainUnit(UnitKind.mech),
                       ),
                     ],
@@ -577,10 +609,10 @@ class _SelectionRow extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
+                      const Padding(
+                        padding: EdgeInsets.only(right: 6),
                         child: Text(
-                          'INVESTIGAR',
+                          'CIENCIAS',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 9,
@@ -588,23 +620,7 @@ class _SelectionRow extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (game.research.shipConstructionUnlocked)
-                        _actionChip('Naves\nLISTO ✓', () {
-                          game.showToast('«Construcción de naves» ya investigado');
-                        })
-                      else if (game.research.isBusy &&
-                          game.research.items.isNotEmpty &&
-                          game.research.items.first.kind ==
-                              TechKind.shipConstruction)
-                        _actionChip(
-                          'Naves\n${game.research.items.first.remaining.ceil()}s',
-                          () => game.cancelResearch(),
-                        )
-                      else
-                        _actionChip(
-                          'Naves\n${Balance.techShipConstructionMineralCost}💎/${Balance.techShipConstructionEnergyCost}☀',
-                          () => game.researchTech(TechKind.shipConstruction),
-                        ),
+                      ..._scienceChips(game),
                     ],
                   ),
                 ),
@@ -733,6 +749,77 @@ class _SelectionRow extends StatelessWidget {
   }
 
   Widget _actionChip(String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1F28),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: _energyGreen),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontSize: 11),
+        ),
+      ),
+    );
+  }
+}
+
+
+List<Widget> _scienceChips(RtsGame game) {
+  Widget chipFor(TechKind kind) {
+    final unlocked = game.research.isUnlocked(kind);
+    final busy = game.research.isBusy &&
+        game.research.items.isNotEmpty &&
+        game.research.items.first.kind == kind;
+    final m = Balance.techMineralCostOf(kind);
+    final e = Balance.techEnergyCostOf(kind);
+    if (unlocked) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: _SelActionChip('${kind.shortEs}\nLISTO ✓', () {
+          game.showToast('«${kind.labelEs}» ya investigado');
+        }),
+      );
+    }
+    if (busy) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: _SelActionChip(
+          '${kind.shortEs}\n${game.research.items.first.remaining.ceil()}s',
+          () => game.cancelResearch(),
+        ),
+      );
+    }
+    final pre = kind.prerequisite;
+    final lockedPre = pre != null && !game.research.isUnlocked(pre);
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: _SelActionChip(
+        lockedPre
+            ? '${kind.shortEs}\n🔒'
+            : '${kind.shortEs}\n$m💎/$e☀',
+        () => game.researchTech(kind),
+      ),
+    );
+  }
+
+  return [
+    for (final k in TechKind.values) chipFor(k),
+  ];
+}
+
+/// Shared action chip used by sciences helper (mirrors _SelectionRow chip).
+class _SelActionChip extends StatelessWidget {
+  const _SelActionChip(this.label, this.onTap);
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

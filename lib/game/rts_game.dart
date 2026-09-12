@@ -17,9 +17,15 @@ import 'enums.dart';
 import 'systems/economy.dart';
 import 'systems/production.dart';
 import 'systems/research.dart';
+import 'battle/battle_game.dart';
 
 class RtsGame extends FlameGame
     with MultiTouchDragDetector, ScaleDetector, TapCallbacks {
+  RtsGame({this.onRequestBattle});
+
+  /// Called when the player taps Batalla (city stays alive underneath).
+  final VoidCallback? onRequestBattle;
+
   final Economy economy = Economy();
   final ProductionQueue production = ProductionQueue();
   final ResearchQueue research = ResearchQueue();
@@ -227,15 +233,92 @@ class RtsGame extends FlameGame
   }
 
   void commandAttackStub() {
-    showToast('Ataque: stub en v0.3 — priorizamos naves/tech');
+    showToast('Usa BATALLA para Asedio PvE');
   }
 
   void commandPatrolStub() {
-    showToast('Patrulla: stub en v0.3');
+    showToast('Patrulla: próximamente');
   }
 
   void commandSpecialStub() {
-    showToast('Especial: stub en v0.3');
+    showToast('Especial: próximamente');
+  }
+
+  /// Opens Asedio if the city has deployable military.
+  void requestBattle() {
+    onRequestBattle?.call();
+  }
+
+  /// Pull military off the map into a battle detachment (workers stay).
+  BattleDetachment? prepareBattleDetachment() {
+    final military = units.where((u) => u.kind.isMilitary && u.parent != null).toList();
+    if (military.isEmpty) {
+      showToast('Entrena tropas en el Cuartel antes de batallar');
+      return null;
+    }
+    final counts = <UnitKind, int>{};
+    for (final u in military) {
+      counts[u.kind] = (counts[u.kind] ?? 0) + 1;
+    }
+    // Remove from city (economy supply stays reserved until return).
+    for (final u in military) {
+      u.removeFromParent();
+      units.remove(u);
+      selectedUnits.remove(u);
+    }
+    for (final g in controlGroups.values) {
+      g.removeWhere((u) => u.parent == null);
+    }
+    showToast('Desplegando ${military.length} tropas…');
+    _notifyHud();
+    return BattleDetachment(
+      counts: counts,
+      unlockedTechs: research.snapshotUnlocked(),
+    );
+  }
+
+  void applyBattleResult({
+    required Map<UnitKind, int> deployed,
+    required Map<UnitKind, int> survivors,
+    required BattleOutcome outcome,
+  }) {
+    // Refund supply for fallen troops.
+    for (final entry in deployed.entries) {
+      final lost = entry.value - (survivors[entry.key] ?? 0);
+      if (lost > 0) {
+        economy.refundSupply(Balance.supplyCostOf(entry.key) * lost);
+      }
+    }
+    // Respawn survivors near CC.
+    Building? cc;
+    for (final b in buildings) {
+      if (b.kind == BuildingKind.commandCenter && b.isComplete) {
+        cc = b;
+        break;
+      }
+    }
+    final base = (cc?.position.clone()) ?? Vector2(520, 900);
+    var i = 0;
+    for (final entry in survivors.entries) {
+      for (var n = 0; n < entry.value; n++) {
+        final angle = i * 0.55;
+        final u = GameUnit(
+          kind: entry.key,
+          position: base + Vector2(math.cos(angle), math.sin(angle)) * (90 + (i % 5) * 12),
+        );
+        world.add(u);
+        units.add(u);
+        i++;
+      }
+    }
+    final label = switch (outcome) {
+      BattleOutcome.victory => 'Victoria — supervivientes de vuelta',
+      BattleOutcome.defeat => 'Derrota — supervivientes de vuelta',
+      BattleOutcome.retreat => 'Retirada — tropas de vuelta',
+      BattleOutcome.ongoing => 'Batalla terminada',
+    };
+    showToast(label);
+    _notifyHud();
   }
 
   void enterBuildMode(BuildMode mode) {
@@ -272,6 +355,12 @@ class RtsGame extends FlameGame
   }
 
   void trainUnit(UnitKind kind) {
+    final need = Balance.techRequiredForUnit(kind);
+    if (need != null && !research.isUnlocked(need)) {
+      showToast('Investiga «${need.labelEs}» en el Laboratorio');
+      return;
+    }
+
     final Building? source;
     if (kind == UnitKind.worker) {
       source = _findTrainer(pred: (b) => b.canTrainWorkers);
@@ -280,10 +369,6 @@ class RtsGame extends FlameGame
         return;
       }
     } else if (kind.isShip) {
-      if (!research.shipConstructionUnlocked) {
-        showToast('Investiga «Construcción de naves» primero');
-        return;
-      }
       source = _findTrainer(pred: (b) => b.canTrainShips);
       if (source == null) {
         showToast('Necesitas un Puerto estelar completo');
@@ -327,12 +412,9 @@ class RtsGame extends FlameGame
       showToast('Necesitas un Laboratorio completo');
       return;
     }
-    if (research.isUnlocked(kind)) {
-      showToast('${kind.labelEs} ya investigado');
-      return;
-    }
-    if (research.isBusy) {
-      showToast('Investigación en curso');
+    final blocked = research.blockedReason(kind);
+    if (blocked != null) {
+      showToast(blocked);
       return;
     }
     final m = Balance.techMineralCostOf(kind);
@@ -726,10 +808,15 @@ class RtsGame extends FlameGame
 
     final researched = research.update(dt);
     for (final item in researched) {
-      if (item.kind == TechKind.shipConstruction) {
-        showToast('¡Tech listo! Puedes construir el Puerto estelar');
-      } else {
-        showToast('${item.kind.labelEs} investigado');
+      switch (item.kind) {
+        case TechKind.shipConstruction:
+          showToast('¡Tech listo! Puerto estelar + grupo Naves');
+        case TechKind.combatArchers:
+          showToast('¡Arqueros desbloqueados en Cuartel y Asedio!');
+        case TechKind.combatVehicles:
+          showToast('¡Rovers desbloqueados en Cuartel y Asedio!');
+        case TechKind.combatMechs:
+          showToast('¡Mechs desbloqueados en Cuartel y Asedio!');
       }
       _notifyHud();
     }
