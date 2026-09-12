@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flame/components.dart';
 
 import '../enums.dart';
+import '../gfx.dart';
 import 'battle_unit.dart';
 
 /// Logical squad of one [BattleGroupKind] controlled as a single large button.
@@ -42,23 +41,24 @@ class BattleGroup {
     if (living.isEmpty) return;
     switch (cmd) {
       case BattleCommand.cargar:
+        final slots = Gfx.formationSlots(gatePos, living.length);
         for (var i = 0; i < living.length; i++) {
-          final spread = Vector2((i - living.length / 2) * 22, 0);
-          living[i].orderCharge(gatePos + spread);
+          living[i].orderCharge(slots[i]);
         }
       case BattleCommand.mantener:
         for (final u in living) {
           u.orderHold();
         }
       case BattleCommand.retirar:
+        final slots = Gfx.formationSlots(retreatPos, living.length);
         for (var i = 0; i < living.length; i++) {
-          final spread = Vector2((i - living.length / 2) * 26, 0);
-          living[i].orderRetreat(retreatPos + spread);
+          living[i].orderRetreat(slots[i]);
         }
       case BattleCommand.fuegoConcentrado:
+        final approach = gatePos + Vector2(0, 80);
+        final slots = Gfx.formationSlots(approach, living.length);
         for (var i = 0; i < living.length; i++) {
-          final spread = Vector2((i - living.length / 2) * 18, 30);
-          living[i].orderFocus(gatePos + spread);
+          living[i].orderFocus(slots[i]);
         }
     }
   }
@@ -66,10 +66,9 @@ class BattleGroup {
   void moveTo(Vector2 world) {
     rallyPoint = world.clone();
     final living = alive;
+    final slots = Gfx.formationSlots(world, living.length);
     for (var i = 0; i < living.length; i++) {
-      final angle = i * 0.7;
-      final offset = Vector2(math.cos(angle) * 18, math.sin(angle) * 18);
-      living[i].orderMove(world + offset);
+      living[i].orderMove(slots[i]);
     }
   }
 }

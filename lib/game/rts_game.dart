@@ -14,6 +14,7 @@ import 'components/resource_node.dart';
 import 'components/terrain.dart';
 import 'components/unit.dart';
 import 'enums.dart';
+import 'gfx.dart';
 import 'systems/economy.dart';
 import 'systems/production.dart';
 import 'systems/research.dart';
@@ -45,6 +46,8 @@ class RtsGame extends FlameGame
   int? activePointerPan;
   Vector2? lastPanWorld;
   bool _isScaling = false;
+  DateTime? _lastTapAt;
+  Vector2? _lastTapWorld;
 
   final ValueNotifier<int> hudTick = ValueNotifier(0);
 
@@ -217,11 +220,26 @@ class RtsGame extends FlameGame
 
   void commandMove(Vector2 worldPos) {
     if (selectedUnits.isEmpty) return;
-    for (final u in selectedUnits) {
-      u.orderMove(worldPos);
+    final slots = Gfx.formationSlots(worldPos, selectedUnits.length);
+    for (var i = 0; i < selectedUnits.length; i++) {
+      selectedUnits[i].orderMove(slots[i]);
     }
     buildMode = BuildMode.none;
     _notifyHud();
+  }
+
+  void selectUnitsByTypeNear(GameUnit seed) {
+    final nearby = <GameUnit>[];
+    for (final u in units) {
+      if (u.parent == null) continue;
+      if (u.kind != seed.kind) continue;
+      if (u.position.distanceTo(seed.position) > Gfx.typeSelectRadius) continue;
+      nearby.add(u);
+    }
+    selectUnits(nearby);
+    showToast(
+      'Selección local: ${seed.kind.labelEs} ×${nearby.length} (r=${Gfx.typeSelectRadius.toInt()})',
+    );
   }
 
   void commandHold() {
@@ -643,6 +661,12 @@ class RtsGame extends FlameGame
       return;
     }
 
+    final now = DateTime.now();
+    final isDouble = _lastTapAt != null &&
+        now.difference(_lastTapAt!).inMilliseconds <= Gfx.doubleTapMs &&
+        _lastTapWorld != null &&
+        _lastTapWorld!.distanceTo(worldPos) < 48;
+
     GameUnit? hitUnit;
     var bestU = 28.0;
     for (final u in units) {
@@ -653,9 +677,20 @@ class RtsGame extends FlameGame
       }
     }
     if (hitUnit != null) {
-      selectUnits([hitUnit]);
+      if (isDouble) {
+        selectUnitsByTypeNear(hitUnit);
+        _lastTapAt = null;
+        _lastTapWorld = null;
+      } else {
+        selectUnits([hitUnit]);
+        _lastTapAt = now;
+        _lastTapWorld = worldPos.clone();
+      }
       return;
     }
+
+    _lastTapAt = now;
+    _lastTapWorld = worldPos.clone();
 
     Building? hitBuilding;
     var bestB = 70.0;

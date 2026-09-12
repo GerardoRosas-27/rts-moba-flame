@@ -1,7 +1,7 @@
 name: rts_moba_flame
-description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.4.0: Asedio PvE + Ciencias."
+description: "RTS móvil (MOBA más adelante) — Flutter + Flame. v0.4.1: polish móvil."
 publish_to: 'none'
-version: 0.4.0+7
+version: 0.4.1+8
 
 environment:
   sdk: ^3.13.2

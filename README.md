@@ -4,6 +4,23 @@ RTS móvil 2D (top-down / ¾) con **Flutter + Flame**. UI en **español**.
 
 Repo: [GerardoRosas-27/rts-moba-flame](https://github.com/GerardoRosas-27/rts-moba-flame)
 
+## v0.4.1 — Polish móvil
+
+- Sombras proyectadas + highlight ligero en edificios/unidades (kit space).
+- Tropas / naves / mechs / rovers **miran** hacia el movimiento o persecución.
+- **Doble toque** en una unidad: selecciona el **mismo tipo** en radio corto (~150 px mundo); lejos no entra. Base + Asedio.
+- Marcha en **formación** (rejilla) al ordenar movimiento (base + batalla).
+- Combate: **proyectiles** animados, **explosiones** al impacto/muerte; enemigos con texturas `enemy_*` **tintadas** (púrpura).
+
+### Feel (v0.4.1)
+
+| Parámetro | Valor |
+|-----------|-------|
+| Radio selección por tipo | 150 world px |
+| Ventana doble toque | 320 ms |
+| Espaciado formación | 34 world px |
+| Columnas máx. formación | 5 |
+
 ## v0.4.0 — Asedio PvE + Ciencias (grupos)
 
 Pivot **base 4X + battle RTS lite**:

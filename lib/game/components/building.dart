@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 import '../assets.dart';
 import '../balance.dart';
 import '../enums.dart';
+import '../gfx.dart';
 
 class Building extends PositionComponent {
   Building({
@@ -87,6 +88,16 @@ class Building extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final c = Offset(size.x / 2, size.y / 2);
+    Gfx.drawProjectedShadow(
+      canvas,
+      center: c,
+      radius: radius,
+      offsetY: radius * 0.28,
+      scaleX: 1.25,
+      scaleY: 0.38,
+      opacity: 0.42,
+    );
+
     final sprite = GameAssets.instance.forBuilding(kind);
     if (sprite != null) {
       final dest = Rect.fromCenter(
@@ -95,6 +106,12 @@ class Building extends PositionComponent {
         height: size.y * 1.05,
       );
       sprite.renderRect(canvas, dest);
+      Gfx.drawHighlight(
+        canvas,
+        center: c,
+        width: size.x * 0.95,
+        height: size.y * 0.95,
+      );
     } else {
       final body = Paint()..color = const Color(0xFFE8EEF5);
       canvas.drawRRect(

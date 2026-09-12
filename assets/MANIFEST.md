@@ -101,3 +101,15 @@ Stubs `vehicle_spaceship_*` removed in v0.3.1.
 | Fragata | `ship_tier3_challenger.png` | Ultimate Spaceships — Challenger |
 | Crucero | `ship_tier4_imperial.png` | Ultimate Spaceships — Imperial |
 | Acorazado | `ship_tier5_insurgent.png` | Ultimate Spaceships — Insurgent |
+
+
+## Enemies (Asedio — tintados en juego)
+
+| PNG | Role |
+|-----|------|
+| `unit_enemy_small.png` | Hostile small |
+| `unit_enemy_extrasmall.png` | Hostile extrasmall |
+| `unit_enemy_flying.png` | Hostile flying |
+| `unit_enemy_large.png` | Hostile large |
+
+En batalla se recoloran (tint púrpura/rojo) para distinguir facción.

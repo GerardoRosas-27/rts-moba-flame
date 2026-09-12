@@ -8,7 +8,9 @@ import 'package:flutter/painting.dart';
 
 import '../assets.dart';
 import '../balance.dart';
+import '../components/vfx.dart';
 import '../enums.dart';
+import '../gfx.dart';
 import 'battle_group.dart';
 import 'battle_terrain.dart';
 import 'battle_unit.dart';
@@ -55,6 +57,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
   final List<BattleGroup> groups = [];
   final List<BattleUnit> friendlies = [];
   final List<BattleUnit> enemies = [];
+  final List<BattleUnit> selectedUnits = [];
   SiegeGate? gate;
 
   BattleGroupKind? selectedGroup;
@@ -65,6 +68,9 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
   double waveTimer = 8;
   BattleOutcome outcome = BattleOutcome.ongoing;
   bool _finished = false;
+
+  DateTime? _lastTapAt;
+  Vector2? _lastTapWorld;
 
   final ValueNotifier<int> hudTick = ValueNotifier(0);
 
@@ -194,11 +200,12 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
           gatePoint.x + (rng.nextDouble() - 0.5) * 200,
           gatePoint.y + 80 + rng.nextDouble() * 60,
         ),
+        variant: i,
       );
     }
   }
 
-  void _spawnEnemy(Vector2 pos) {
+  void _spawnEnemy(Vector2 pos, {int variant = 0}) {
     if (enemies.where((e) => !e.dead).length >= Balance.battleMaxEnemyAlive) {
       return;
     }
@@ -206,6 +213,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
       kind: UnitKind.infantryFrog,
       friendly: false,
       position: pos,
+      enemyVariant: variant,
     );
     world.add(u);
     enemies.add(u);
@@ -226,6 +234,32 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
     return null;
   }
 
+  void _clearUnitSelection() {
+    for (final u in selectedUnits) {
+      u.selected = false;
+    }
+    selectedUnits.clear();
+  }
+
+  void selectUnitsByTypeNear(BattleUnit seed) {
+    _clearUnitSelection();
+    final pool = seed.friendly ? friendlies : enemies;
+    for (final u in pool) {
+      if (u.dead || u.parent == null) continue;
+      if (u.kind != seed.kind) continue;
+      if (u.position.distanceTo(seed.position) > Gfx.typeSelectRadius) continue;
+      u.selected = true;
+      selectedUnits.add(u);
+    }
+    if (seed.friendly && seed.group != null) {
+      selectedGroup = seed.group;
+    }
+    showToast(
+      'Selección local: ${seed.kind.labelEs} ×${selectedUnits.length}',
+    );
+    _notifyHud();
+  }
+
   void selectGroup(BattleGroupKind kind) {
     final g = groupOf(kind);
     if (g == null || !g.unlocked) {
@@ -237,6 +271,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
       return;
     }
     selectedGroup = kind;
+    _clearUnitSelection();
     showToast('${kind.labelEs} (${g.aliveCount})');
     _notifyHud();
   }
@@ -263,6 +298,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
     final g = groupOf(kind);
     if (g == null || !g.unlocked || g.aliveCount <= 0) return;
     selectedGroup = kind;
+    _clearUnitSelection();
     final world = camera.globalToLocal(screenPos);
     // Clamp to map
     world.x = world.x.clamp(40, Balance.battleMapWidth - 40);
@@ -278,6 +314,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
     if (g == null || !g.unlocked || g.aliveCount <= 0) return;
     draggingGroup = kind;
     selectedGroup = kind;
+    _clearUnitSelection();
     _notifyHud();
   }
 
@@ -315,10 +352,73 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
     });
   }
 
-  @override
-  void onTapUp(TapUpEvent event) {
-    if (outcome != BattleOutcome.ongoing) return;
-    final world = camera.globalToLocal(event.canvasPosition);
+  void _spawnProjectile({
+    required Vector2 from,
+    required Vector2 to,
+    required int damage,
+    required bool friendlyShot,
+    BattleUnit? targetUnit,
+    bool vsGate = false,
+  }) {
+    final color = friendlyShot
+        ? const Color(0xFFFFF176)
+        : const Color(0xFFE040FB);
+    world.add(
+      Projectile(
+        from: from,
+        to: to,
+        color: color,
+        onHit: () {
+          if (vsGate) {
+            gate?.takeDamage(damage);
+            world.add(
+              Explosion(
+                position: to,
+                maxRadius: 18,
+                duration: 0.28,
+                color: const Color(0xFFFFA726),
+              ),
+            );
+          } else if (targetUnit != null && !targetUnit.dead) {
+            final wasAlive = !targetUnit.dead;
+            targetUnit.takeDamage(damage);
+            world.add(
+              Explosion(
+                position: to,
+                maxRadius: 14,
+                duration: 0.25,
+                color: const Color(0xFFFF7043),
+              ),
+            );
+            if (wasAlive && targetUnit.dead) {
+              world.add(
+                Explosion(
+                  position: targetUnit.position.clone(),
+                  maxRadius: 32,
+                  duration: 0.5,
+                  color: const Color(0xFFFF5722),
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _moveSelectionOrGroup(Vector2 world) {
+    world.x = world.x.clamp(40, Balance.battleMapWidth - 40);
+    world.y = world.y.clamp(80, Balance.battleMapHeight - 40);
+    final local = selectedUnits.where((u) => !u.dead && u.friendly).toList();
+    if (local.isNotEmpty) {
+      final slots = Gfx.formationSlots(world, local.length);
+      for (var i = 0; i < local.length; i++) {
+        local[i].orderMove(slots[i]);
+      }
+      showToast('Formación (${local.length})');
+      _notifyHud();
+      return;
+    }
     final kind = selectedGroup;
     if (kind != null) {
       final g = groupOf(kind);
@@ -326,6 +426,50 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
       showToast('Mover ${kind.labelEs}');
       _notifyHud();
     }
+  }
+
+  @override
+  void onTapUp(TapUpEvent event) {
+    if (outcome != BattleOutcome.ongoing) return;
+    final world = camera.globalToLocal(event.canvasPosition);
+    final now = DateTime.now();
+    final isDouble = _lastTapAt != null &&
+        now.difference(_lastTapAt!).inMilliseconds <= Gfx.doubleTapMs &&
+        _lastTapWorld != null &&
+        _lastTapWorld!.distanceTo(world) < 48;
+
+    BattleUnit? hit;
+    var best = 30.0;
+    for (final u in [...friendlies, ...enemies]) {
+      if (u.dead) continue;
+      final d = u.position.distanceTo(world);
+      if (d < best) {
+        best = d;
+        hit = u;
+      }
+    }
+
+    if (isDouble && hit != null && hit.friendly) {
+      selectUnitsByTypeNear(hit);
+      _lastTapAt = null;
+      _lastTapWorld = null;
+      return;
+    }
+
+    _lastTapAt = now;
+    _lastTapWorld = world.clone();
+
+    if (hit != null && hit.friendly && !isDouble) {
+      // Single tap on unit: select just that unit (quick) — move still via empty tap.
+      _clearUnitSelection();
+      hit.selected = true;
+      selectedUnits.add(hit);
+      if (hit.group != null) selectedGroup = hit.group;
+      _notifyHud();
+      return;
+    }
+
+    _moveSelectionOrGroup(world);
   }
 
   @override
@@ -368,6 +512,7 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
             gatePoint.x + (rng.nextDouble() - 0.5) * 240,
             gatePoint.y + 50 + rng.nextDouble() * 80,
           ),
+          variant: rng.nextInt(4),
         );
       }
       showToast('Oleada enemiga');
@@ -377,32 +522,74 @@ class BattleGame extends FlameGame with TapCallbacks, ScaleDetector {
     final aliveFriends = friendlies.where((u) => !u.dead).toList();
     final aliveEnemies = enemies.where((u) => !u.dead).toList();
 
-    for (final u in aliveFriends) {
+    void handleFire(
+      BattleUnit attacker,
+      Vector2 from,
+      Vector2 to,
+      int dmg,
+      bool vsGate,
+    ) {
+      BattleUnit? target;
+      if (!vsGate) {
+        // Prefer foe closest to impact point among opposing side.
+        final foes = attacker.friendly ? aliveEnemies : aliveFriends;
+        var best = double.infinity;
+        for (final f in foes) {
+          if (f.dead) continue;
+          final d = f.position.distanceTo(to);
+          if (d < best) {
+            best = d;
+            target = f;
+          }
+        }
+      }
+      _spawnProjectile(
+        from: from,
+        to: to,
+        damage: dmg,
+        friendlyShot: attacker.friendly,
+        targetUnit: target,
+        vsGate: vsGate,
+      );
+    }
+
+    for (final u in List.of(aliveFriends)) {
       u.tickCombat(
         dt: dt,
         allies: aliveFriends,
         foes: aliveEnemies,
         gate: g,
         retreatPoint: retreatPoint,
+        onFire: handleFire,
       );
     }
-    for (final u in aliveEnemies) {
+    for (final u in List.of(aliveEnemies)) {
       u.tickCombat(
         dt: dt,
         allies: aliveEnemies,
         foes: aliveFriends,
         gate: g,
         retreatPoint: retreatPoint,
+        onFire: handleFire,
       );
     }
 
+    // Gate destroyed explosion
     if (g != null && g.destroyed) {
+      world.add(
+        Explosion(
+          position: g.position.clone(),
+          maxRadius: 70,
+          duration: 0.7,
+          color: const Color(0xFFFF3D00),
+        ),
+      );
       showToast('¡Puerta destruida!');
       _end(BattleOutcome.victory);
       return;
     }
 
-    if (aliveFriends.isEmpty) {
+    if (friendlies.every((u) => u.dead || u.parent == null)) {
       showToast('Tropas derrotadas');
       _end(BattleOutcome.defeat);
       return;

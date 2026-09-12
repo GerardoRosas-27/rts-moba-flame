@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import '../assets.dart';
 import '../balance.dart';
 import '../enums.dart';
+import '../gfx.dart';
 import 'building.dart';
 import 'resource_node.dart';
 
@@ -37,10 +38,15 @@ class GameUnit extends PositionComponent {
   double gatherTimer = 0;
   bool holdPosition = false;
 
+  /// Radians; 0 = facing +X. Updated while moving.
+  double facing = 0;
+
   double get radius => size.x / 2;
   double get speed => Balance.speedOf(kind);
   bool get isCarrying => carryingAmount > 0;
   bool get isWorker => kind.canHarvest;
+  bool get usesFullRotation =>
+      kind.isShip || kind == UnitKind.rover || kind == UnitKind.mech;
 
   void orderMove(Vector2 worldPos) {
     holdPosition = false;
@@ -82,6 +88,13 @@ class GameUnit extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final c = Offset(size.x / 2, size.y / 2);
+    Gfx.drawProjectedShadow(
+      canvas,
+      center: c,
+      radius: radius,
+      offsetY: radius * 0.35,
+    );
+
     if (selected) {
       final dash = Paint()
         ..color = const Color(0xFF00AEEF)
@@ -92,12 +105,21 @@ class GameUnit extends PositionComponent {
 
     final sprite = GameAssets.instance.forUnit(kind);
     if (sprite != null) {
-      final dest = Rect.fromCenter(
+      Gfx.drawOrientedSprite(
+        canvas,
+        sprite: sprite,
         center: c,
         width: size.x * 1.15,
         height: size.y * 1.15,
+        facingRad: facing,
+        rotate: usesFullRotation,
       );
-      sprite.renderRect(canvas, dest);
+      Gfx.drawHighlight(
+        canvas,
+        center: c,
+        width: size.x,
+        height: size.y,
+      );
     } else {
       canvas.drawCircle(c, radius, Paint()..color = const Color(0xFF4A5568));
     }
@@ -129,6 +151,7 @@ class GameUnit extends PositionComponent {
       position.setFrom(target);
       return true;
     }
+    facing = math.atan2(delta.y, delta.x);
     final step = math.min(speed * dt, dist);
     position += delta.normalized() * step;
     return false;

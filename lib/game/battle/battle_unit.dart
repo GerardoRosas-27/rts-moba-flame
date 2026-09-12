@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import '../assets.dart';
 import '../balance.dart';
 import '../enums.dart';
+import '../gfx.dart';
 import 'gate.dart';
 
 enum BattleStance { idle, move, hold, charge, focus, retreat }
@@ -17,6 +18,7 @@ class BattleUnit extends PositionComponent {
     required this.friendly,
     required Vector2 position,
     this.group,
+    this.enemyVariant = 0,
   }) : super(
           position: position,
           size: Vector2.all(
@@ -34,12 +36,15 @@ class BattleUnit extends PositionComponent {
   final UnitKind kind;
   final bool friendly;
   BattleGroupKind? group;
+  final int enemyVariant;
   late int hp;
   late int maxHp;
   BattleStance stance = BattleStance.idle;
   Vector2? moveTarget;
   double attackCooldown = 0;
   bool dead = false;
+  bool selected = false;
+  double facing = -math.pi / 2; // default toward gate (up)
 
   double get radius => size.x / 2;
 
@@ -55,6 +60,9 @@ class BattleUnit extends PositionComponent {
   double get cooldownMax => friendly
       ? Balance.attackCooldownOf(kind)
       : Balance.enemyAttackCooldown;
+
+  bool get usesFullRotation =>
+      kind.isShip || kind == UnitKind.rover || kind == UnitKind.mech || !friendly;
 
   void orderMove(Vector2 world) {
     if (dead) return;
@@ -96,32 +104,75 @@ class BattleUnit extends PositionComponent {
     }
   }
 
+  static const ColorFilter _enemyTint = ColorFilter.mode(
+    Color(0xFFCE93D8),
+    BlendMode.modulate,
+  );
+
   @override
   void render(Canvas canvas) {
     if (dead) return;
     final c = Offset(size.x / 2, size.y / 2);
+    Gfx.drawProjectedShadow(
+      canvas,
+      center: c,
+      radius: radius,
+      offsetY: radius * 0.32,
+    );
+
+    if (selected) {
+      canvas.drawCircle(
+        c,
+        radius + 5,
+        Paint()
+          ..color = const Color(0xFF00AEEF)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6,
+      );
+    }
+
     if (friendly) {
       final sprite = GameAssets.instance.forUnit(kind);
       if (sprite != null) {
-        sprite.renderRect(
+        Gfx.drawOrientedSprite(
           canvas,
-          Rect.fromCenter(
-            center: c,
-            width: size.x * 1.1,
-            height: size.y * 1.1,
-          ),
+          sprite: sprite,
+          center: c,
+          width: size.x * 1.1,
+          height: size.y * 1.1,
+          facingRad: facing,
+          rotate: usesFullRotation,
+        );
+        Gfx.drawHighlight(
+          canvas,
+          center: c,
+          width: size.x,
+          height: size.y,
         );
       } else {
         canvas.drawCircle(c, radius, Paint()..color = const Color(0xFF4FC3F7));
       }
     } else {
-      // Simple hostile blob (no enemy sprite kit yet).
-      canvas.drawCircle(c, radius, Paint()..color = const Color(0xFFE53935));
-      canvas.drawCircle(
-        c,
-        radius * 0.45,
-        Paint()..color = const Color(0xFF8B0000),
-      );
+      final sprite = GameAssets.instance.forEnemy(variant: enemyVariant);
+      if (sprite != null) {
+        Gfx.drawOrientedSprite(
+          canvas,
+          sprite: sprite,
+          center: c,
+          width: size.x * 1.2,
+          height: size.y * 1.2,
+          facingRad: facing,
+          rotate: true,
+          tint: _enemyTint,
+        );
+      } else {
+        canvas.drawCircle(c, radius, Paint()..color = const Color(0xFFE53935));
+        canvas.drawCircle(
+          c,
+          radius * 0.45,
+          Paint()..color = const Color(0xFF8B0000),
+        );
+      }
     }
 
     final barW = size.x;
@@ -144,6 +195,7 @@ class BattleUnit extends PositionComponent {
       position.setFrom(target);
       return true;
     }
+    facing = math.atan2(delta.y, delta.x);
     final step = math.min(speed * dt, dist);
     position += delta.normalized() * step;
     return false;
@@ -155,6 +207,13 @@ class BattleUnit extends PositionComponent {
     required List<BattleUnit> foes,
     required SiegeGate? gate,
     required Vector2 retreatPoint,
+    required void Function(
+      BattleUnit attacker,
+      Vector2 from,
+      Vector2 to,
+      int dmg,
+      bool vsGate,
+    ) onFire,
   }) {
     if (dead) return;
     attackCooldown = math.max(0, attackCooldown - dt);
@@ -191,14 +250,35 @@ class BattleUnit extends PositionComponent {
         stance == BattleStance.charge ||
         (!friendly && gate != null);
 
+    void face(Vector2 target) {
+      facing = math.atan2(target.y - position.y, target.x - position.x);
+    }
+
+    void fireAtUnit(BattleUnit target) {
+      face(target.position);
+      attackCooldown = cooldownMax;
+      onFire(this, position.clone(), target.position.clone(), damage, false);
+    }
+
+    void fireAtGate(SiegeGate g) {
+      face(g.position);
+      attackCooldown = cooldownMax;
+      onFire(
+        this,
+        position.clone(),
+        g.position.clone(),
+        damage,
+        true,
+      );
+    }
+
     // Enemies prioritize player units; if none, push south.
     if (!friendly) {
       if (nearestFoe != null) {
         if (best > attackRange) {
           _stepToward(nearestFoe.position, dt);
         } else if (attackCooldown <= 0) {
-          nearestFoe.takeDamage(damage);
-          attackCooldown = cooldownMax;
+          fireAtUnit(nearestFoe);
         }
       } else {
         _stepToward(Vector2(position.x, Balance.battleRetreatY), dt);
@@ -214,16 +294,14 @@ class BattleUnit extends PositionComponent {
           _stepToward(gate.position, dt);
         }
       } else if (attackCooldown <= 0) {
-        gate.takeDamage(damage);
-        attackCooldown = cooldownMax;
+        fireAtGate(gate);
       }
       // Also shoot nearby foes while focusing
       if (nearestFoe != null &&
           best <= attackRange &&
           attackCooldown <= 0 &&
           stance != BattleStance.focus) {
-        nearestFoe.takeDamage(damage);
-        attackCooldown = cooldownMax;
+        fireAtUnit(nearestFoe);
       }
       return;
     }
@@ -234,8 +312,7 @@ class BattleUnit extends PositionComponent {
           _stepToward(nearestFoe.position, dt);
         }
       } else if (attackCooldown <= 0) {
-        nearestFoe.takeDamage(damage);
-        attackCooldown = cooldownMax;
+        fireAtUnit(nearestFoe);
       }
     }
   }

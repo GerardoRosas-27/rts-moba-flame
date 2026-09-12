@@ -35,6 +35,11 @@ class GameAssets {
     'unit_astronaut_fernando.png',
     'unit_astronaut_finn.png',
     'unit_astronaut_rae.png',
+    // Enemies (tinted in battle)
+    'unit_enemy_small.png',
+    'unit_enemy_extrasmall.png',
+    'unit_enemy_flying.png',
+    'unit_enemy_large.png',
     // Vehicles / ships (Ultimate Spaceships para tiers de Puerto estelar)
     'vehicle_rover_1.png',
     'vehicle_rover_2.png',
@@ -127,6 +132,20 @@ class GameAssets {
         return get('ship_tier4_imperial.png');
       case UnitKind.shipAcorazado:
         return get('ship_tier5_insurgent.png');
+    }
+  }
+
+  /// Hostile kit textures (recolored at draw time).
+  Sprite? forEnemy({int variant = 0}) {
+    switch (variant % 4) {
+      case 0:
+        return get('unit_enemy_small.png');
+      case 1:
+        return get('unit_enemy_extrasmall.png');
+      case 2:
+        return get('unit_enemy_flying.png');
+      default:
+        return get('unit_enemy_large.png');
     }
   }
 }

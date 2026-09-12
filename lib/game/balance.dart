@@ -1,6 +1,7 @@
 import 'enums.dart';
 
-/// Feel numbers for v0.4.0 — Asedio PvE + Sciences tree.
+/// Feel numbers for v0.4.1 — polish móvil (sombras, formación, VFX).
+/// Type-select radius / formation spacing viven en [Gfx].
 class Balance {
   // --- Start ---
   static const int startMinerals = 150;
